@@ -1,0 +1,20 @@
+{
+  "target": {
+    "id": "t1_rule",
+    "type": "comment",
+    "subredditName": "demo",
+    "authorName": "troll",
+    "bodyText": "You are an idiot — not be civil at all.",
+    "reportReason": "harassment"
+  },
+  "parentContext": [{ "text": "Please keep comments constructive.", "sourceLabel": "parent" }],
+  "recentUserActivity": [],
+  "subredditRules": [
+    {
+      "id": "1",
+      "title": "Be civil",
+      "description": "Personal attacks, slurs, and harassment are prohibited."
+    }
+  ],
+  "unavailableContext": []
+}

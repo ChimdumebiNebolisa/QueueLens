@@ -1,0 +1,26 @@
+{
+  "target": {
+    "id": "t3_amb",
+    "type": "post",
+    "subredditName": "demo",
+    "authorName": "newbie",
+    "title": "Is this allowed?",
+    "bodyText": "I posted a question about local restaurants — not sure why it was reported.",
+    "reportReason": "custom: low effort"
+  },
+  "parentContext": [],
+  "recentUserActivity": [],
+  "subredditRules": [
+    {
+      "id": "1",
+      "title": "Be civil",
+      "description": "Keep discussion respectful."
+    }
+  ],
+  "unavailableContext": [
+    {
+      "domain": "thread_replies",
+      "reason": "V1 fetches parent/thread context for comment targets only; post targets do not load sibling/top replies here."
+    }
+  ]
+}

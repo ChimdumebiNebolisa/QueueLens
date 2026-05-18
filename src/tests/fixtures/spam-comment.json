@@ -1,0 +1,20 @@
+{
+  "target": {
+    "id": "t1_demo",
+    "type": "comment",
+    "subredditName": "demo",
+    "authorName": "spammer",
+    "bodyText": "Buy now at https://spam.example and also https://spam.example/extra !",
+    "reportReason": "spam"
+  },
+  "parentContext": [{ "text": "Welcome to the weekly thread.", "sourceLabel": "parent" }],
+  "recentUserActivity": [{ "text": "Older: check https://spam.example", "sourceLabel": "history" }],
+  "subredditRules": [
+    {
+      "id": "1",
+      "title": "No spam",
+      "description": "No unsolicited promotional links."
+    }
+  ],
+  "unavailableContext": []
+}
