@@ -28,6 +28,19 @@ Current verified baseline:
 - Allowed evidence snippets and repeated-link detection were added afterward.
 - `npm run typecheck`, `npm test`, and `npm run build` pass.
 
+Completed in this hardening pass:
+
+- `.gitignore` was hardened for safe Git baselining.
+- The first baseline commit was created locally: `Baseline QueueLens Devvit app`.
+- Port `5678` was reclaimed from a stale workspace `node` process and `npm run dev` reached Playtest ready again.
+- Deterministic evidence fallback was implemented after validation.
+- Repeated bare-domain spam detection was implemented.
+- Redacted email and phone detection was implemented for the fake personal-info demo case.
+- `ContextBundle.ruleSource` now distinguishes live rules from demo fallback rules.
+- `ValidatedAnalysisResult.evidenceFallbackUsed` now surfaces fallback evidence usage.
+- The UI now has a compact summary row, copy moderator note button, clearer raw context button, rule coverage panel, and visible analysis quality checks.
+- Automated test coverage now includes pipeline fallback and mocked comment-context tests.
+
 Still pending manual verification:
 
 - comment target flow
@@ -43,6 +56,9 @@ Still pending manual verification:
 Objective:
 Confirm that the live Devvit UI now shows validated evidence for the repeated-link spam case after the prompt and signal updates.
 
+Status:
+Implemented in code; live Reddit UI verification still pending.
+
 Verify:
 - evidence appears in the UI
 - evidence is exact, not paraphrased
@@ -52,6 +68,9 @@ Verify:
 
 Objective:
 Confirm that the comment menu action, Redis handoff, context fetch, analysis, and rendering path work end to end for comment targets.
+
+Status:
+Bounded comment-path tests were added; live Reddit UI verification still pending.
 
 Verify:
 - comment menu action appears for moderators
@@ -64,6 +83,9 @@ Verify:
 Objective:
 Verify and tighten live-rule behavior so the demo prefers real subreddit rules when available and uses demo-rule fallback only when necessary.
 
+Status:
+Rule-source plumbing is implemented; live-rule behavior still needs Reddit-side verification.
+
 Verify:
 - live subreddit rules load in the target subreddit
 - missing-rule fallback stays explicit in raw context
@@ -73,6 +95,9 @@ Verify:
 
 Objective:
 Keep the verification log aligned with actual observed behavior after each manual retest.
+
+Status:
+Updated with automated results and current live-verification boundaries.
 
 Verify:
 - each completed manual check has a conservative entry

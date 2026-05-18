@@ -1,54 +1,26 @@
 import type { ContextBundle } from '../types/context.js';
 import type { DeterministicSignal } from '../types/analysis.js';
-
-const URL_RE = /\bhttps?:\/\/[^\s)]+/gi;
-
-type UrlObservation = {
-  exactUrl: string;
-  exactDomain: string;
-  canonicalUrl: string;
-  canonicalDomain: string;
-};
+import { collectLinkObservations, URL_RE } from './linkFragments.js';
 
 function uniqueUrls(text: string): string[] {
   const matches = text.match(URL_RE) ?? [];
   return [...new Set(matches)];
 }
 
-function collectUrlObservations(text: string): UrlObservation[] {
-  const observations: UrlObservation[] = [];
-
-  for (const match of text.matchAll(URL_RE)) {
-    const exactUrl = match[0]?.trim();
-    if (!exactUrl) continue;
-
-    const domainMatch = exactUrl.match(/^https?:\/\/([^\/\s?#]+)/i);
-    const exactDomain = domainMatch?.[1]?.trim();
-    if (!exactDomain) continue;
-
-    observations.push({
-      exactUrl,
-      exactDomain,
-      canonicalUrl: exactUrl.toLowerCase(),
-      canonicalDomain: exactDomain.toLowerCase(),
-    });
-  }
-
-  return observations;
-}
-
 function findRepeatedUrlOrDomain(
-  observations: UrlObservation[],
+  observations: ReturnType<typeof collectLinkObservations>,
 ): { matchedText: string; kind: 'url' | 'domain' } | null {
   const urlCounts = new Map<string, { exact: string; count: number }>();
   const domainCounts = new Map<string, { exact: string; count: number }>();
 
   for (const observation of observations) {
-    const urlEntry = urlCounts.get(observation.canonicalUrl);
-    if (urlEntry) {
-      urlEntry.count += 1;
-    } else {
-      urlCounts.set(observation.canonicalUrl, { exact: observation.exactUrl, count: 1 });
+    if (observation.canonicalUrl && observation.exactUrl) {
+      const urlEntry = urlCounts.get(observation.canonicalUrl);
+      if (urlEntry) {
+        urlEntry.count += 1;
+      } else {
+        urlCounts.set(observation.canonicalUrl, { exact: observation.exactUrl, count: 1 });
+      }
     }
 
     const domainEntry = domainCounts.get(observation.canonicalDomain);
@@ -82,7 +54,7 @@ export function extractDeterministicSignals(bundle: ContextBundle): Deterministi
   const signals: DeterministicSignal[] = [];
   const reportedContent = [bundle.target.title, bundle.target.bodyText].filter(Boolean).join('\n');
   const repeatedUrlOrDomain = findRepeatedUrlOrDomain(
-    collectUrlObservations(bundle.target.bodyText),
+    collectLinkObservations(bundle.target.bodyText),
   );
 
   if (repeatedUrlOrDomain) {
@@ -118,6 +90,32 @@ export function extractDeterministicSignals(bundle: ContextBundle): Deterministi
   }
 
   const lowered = reportedContent.toLowerCase();
+  const redactedPersonalInfo = [
+    {
+      token: '[redacted-email]',
+      id: 'possible_pii_email',
+      label: 'Possible email address in reported content',
+      reason: 'Reported content included an email address that was redacted before analysis.',
+    },
+    {
+      token: '[redacted-phone]',
+      id: 'possible_pii_phone',
+      label: 'Possible phone number in reported content',
+      reason: 'Reported content included a phone number that was redacted before analysis.',
+    },
+  ];
+  for (const item of redactedPersonalInfo) {
+    if (lowered.includes(item.token)) {
+      signals.push({
+        id: item.id,
+        label: item.label,
+        severity: 'low',
+        matchedText: item.token,
+        reason: item.reason,
+      });
+    }
+  }
+
   const spammy = ['buy now', 'click here', 'crypto', 'giveaway', 'free money'];
   for (const term of spammy) {
     if (lowered.includes(term)) {

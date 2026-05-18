@@ -34,6 +34,7 @@ export type ContextBundle = {
   parentContext: ContextItem[];
   recentUserActivity: ContextItem[];
   subredditRules: SubredditRule[];
+  ruleSource: 'live' | 'demo_fallback';
   unavailableContext: UnavailableContextNote[];
 };
 
@@ -78,6 +79,7 @@ export type ValidatedAnalysisResult = {
   contextBundle: ContextBundle;
   deterministicSignals: DeterministicSignal[];
   aiAnalysis?: AIAnalysis;
+  evidenceFallbackUsed: boolean;
   validationWarnings: string[];
   safeFallbackMessage?: string;
 };

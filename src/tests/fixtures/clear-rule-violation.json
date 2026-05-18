@@ -16,5 +16,6 @@
       "description": "Personal attacks, slurs, and harassment are prohibited."
     }
   ],
+  "ruleSource": "demo_fallback",
   "unavailableContext": []
 }

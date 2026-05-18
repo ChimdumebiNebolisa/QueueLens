@@ -1,9 +1,20 @@
+import { useState } from 'react';
 import type { ValidatedAnalysisResult } from '../../shared/queueLensDomain.js';
+import { ConfidenceBadge } from './ConfidenceBadge.js';
+import { EvidencePanel } from './EvidencePanel.js';
 
 type Props = { result: ValidatedAnalysisResult };
 
 export function DecisionCard({ result }: Props) {
   const ai = result.aiAnalysis;
+  const [copied, setCopied] = useState(false);
+
+  async function copyModeratorNote(note: string) {
+    await navigator.clipboard.writeText(note);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1500);
+  }
+
   if (!ai) {
     return (
       <section className="card">
@@ -18,36 +29,82 @@ export function DecisionCard({ result }: Props) {
       <header className="card-header">
         <h2>Review brief</h2>
         <p className="disclaimer">
-          The human moderator makes the final decision. QueueLens output is advisory only and is not enforcement.
+          Review assistance only. Final decision stays with the moderator.
         </p>
       </header>
       <p className="summary">{ai.summary}</p>
-      <div className="row">
-        <div>
+      <div className="summary-row">
+        <div className="summary-item">
           <span className="label">Review priority</span>
           <span className={`pill priority-${ai.reviewPriority}`}>{ai.reviewPriority}</span>
         </div>
-        <div>
+        <div className="summary-item">
+          <span className="label">Confidence</span>
+          <ConfidenceBadge level={ai.confidence} />
+        </div>
+        <div className="summary-item">
           <span className="label">Suggested action</span>
           <span className="pill">{ai.suggestedAction}</span>
         </div>
       </div>
-      {ai.possibleRuleMatches.length > 0 && (
-        <div className="rules">
-          <span className="label">Possible rule matches</span>
-          <ul>
-            {ai.possibleRuleMatches.map((r) => (
-              <li key={r}>{r}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+
+      <EvidencePanel items={ai.evidence} fallbackUsed={result.evidenceFallbackUsed} />
+
       {ai.moderatorNoteDraft && (
         <div className="draft">
-          <span className="label">Moderator note draft (optional)</span>
+          <div className="section-head">
+            <span className="label">Moderator note draft</span>
+            <button type="button" className="buttonish secondary" onClick={() => void copyModeratorNote(ai.moderatorNoteDraft!)}>
+              {copied ? 'Copied' : 'Copy moderator note'}
+            </button>
+          </div>
           <pre>{ai.moderatorNoteDraft}</pre>
         </div>
       )}
+
+      <div className="rules">
+        <div className="section-head">
+          <span className="label">Rule coverage</span>
+          <span className="badge">{result.contextBundle.ruleSource === 'live' ? 'live rules' : 'demo fallback rules'}</span>
+        </div>
+        <div className="rule-columns">
+          <div>
+            <span className="label">Rules considered</span>
+            <ul className="plain-list">
+              {result.contextBundle.subredditRules.map((rule) => (
+                <li key={rule.id}>
+                  <span className="rule-chip">{rule.title}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <span className="label">Possible matched rules</span>
+            {ai.possibleRuleMatches.length > 0 ? (
+              <ul className="plain-list">
+                {ai.possibleRuleMatches.map((rule) => (
+                  <li key={rule}>
+                    <span className="rule-chip matched">{rule}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted small">No specific rule match surfaced for this run.</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="quality-checks">
+        <span className="label">Analysis quality</span>
+        <ul className="quality-list">
+          <li className="quality-pass">Schema valid</li>
+          <li className="quality-pass">Evidence validated</li>
+          <li className="quality-pass">No automatic action taken</li>
+          <li className="quality-pass">Raw context available</li>
+          {result.evidenceFallbackUsed && <li className="quality-note">Deterministic evidence fallback used</li>}
+        </ul>
+      </div>
     </section>
   );
 }

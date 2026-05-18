@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ContextBundle, DeterministicSignal } from '../shared/queueLensDomain.js';
-import { validateAnalysis } from '../server/analysis/validateAnalysis.js';
+import { buildDeterministicFallbackEvidence, validateAnalysis } from '../server/analysis/validateAnalysis.js';
 
 function baseContext(overrides: Partial<ContextBundle> = {}): ContextBundle {
   return {
@@ -16,6 +16,7 @@ function baseContext(overrides: Partial<ContextBundle> = {}): ContextBundle {
     parentContext: [{ text: 'Parent says hello.', sourceLabel: 'parent' }],
     recentUserActivity: [{ text: 'Older post: another line', sourceLabel: 'history' }],
     subredditRules: [{ id: '1', title: 'No spam', description: 'Do not post spam links.' }],
+    ruleSource: 'demo_fallback',
     unavailableContext: [],
     ...overrides,
   };
@@ -147,6 +148,29 @@ describe('validateAnalysis', () => {
     const r = validateAnalysis(baseContext(), signals, raw);
     expect(r.status).toBe('success');
     expect(r.aiAnalysis?.evidence).toHaveLength(1);
+  });
+
+  it('builds deterministic fallback evidence from exact matchedText only', () => {
+    const fallback = buildDeterministicFallbackEvidence(baseContext(), signals);
+    expect(fallback).toEqual([
+      {
+        snippet: 'http://spam.example',
+        source: 'deterministic_signal',
+        reason: 'Body contains a URL.',
+      },
+    ]);
+  });
+
+  it('does not build fallback when deterministic matchedText is absent', () => {
+    const fallback = buildDeterministicFallbackEvidence(baseContext(), [
+      {
+        id: 'missing-match',
+        label: 'No exact match',
+        severity: 'low',
+        reason: 'No exact text was available.',
+      },
+    ]);
+    expect(fallback).toHaveLength(0);
   });
 
   it('high priority without valid evidence is downgraded and needs manual review', () => {

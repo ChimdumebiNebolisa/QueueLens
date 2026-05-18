@@ -1,20 +1,20 @@
 {
   "target": {
-    "id": "t3_amb",
+    "id": "t3_fake_pii",
     "type": "post",
     "subredditName": "demo",
-    "authorName": "newbie",
-    "title": "Is this allowed?",
-    "bodyText": "I posted a question about local restaurants — not sure why it was reported.",
-    "reportReason": "custom: low effort"
+    "authorName": "tester",
+    "title": "fake data test",
+    "bodyText": "This is fake test data: [redacted-email] and [redacted-phone].",
+    "reportReason": "privacy"
   },
   "parentContext": [],
   "recentUserActivity": [],
   "subredditRules": [
     {
       "id": "1",
-      "title": "Be civil",
-      "description": "Keep discussion respectful."
+      "title": "No personal information",
+      "description": "Do not post personal or contact information."
     }
   ],
   "ruleSource": "demo_fallback",

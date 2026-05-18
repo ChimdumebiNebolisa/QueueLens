@@ -7,12 +7,15 @@ QueueLens is a Reddit Devvit moderation tool that gathers bounded post or commen
 QueueLens helps a moderator review one reported or questionable Reddit item at a time. It compresses scattered context into one card that shows:
 
 - summary
+- compact review summary row
 - possible rule matches
 - review priority
 - confidence
 - suggested action
 - exact evidence snippets
 - deterministic signals
+- rule coverage
+- analysis quality checks
 - raw context
 
 QueueLens is advisory only. It does not remove content, ban users, lock threads, or message users automatically.
@@ -27,6 +30,15 @@ QueueLens is advisory only. It does not remove content, ban users, lock threads,
 6. `App.tsx` calls `GET /api/analyze`.
 7. The server gathers bounded Reddit context, runs deterministic signals, builds the AI prompt, calls OpenAI, validates schema, validates exact evidence, and returns a trusted result.
 8. The client renders the decision card, evidence panel, signal list, and raw context drawer.
+
+Current hardening additions:
+
+- validated deterministic evidence fallback when AI evidence is empty
+- repeated bare-domain spam detection
+- redacted email and phone detection for fake personal-info demos
+- copy moderator note button
+- rule coverage panel
+- visible analysis quality checks
 
 ## Requirements
 
@@ -158,21 +170,26 @@ Use these cases for demo-hardening and final review:
 ### Verified
 
 - Playtest ready was reached.
+- Playtest ready was reached again in this hardening pass after reclaiming port `5678`.
 - QueueLens opened inside `r/queuelens_dev`.
 - Post menu/session flow worked.
 - Missing OpenAI key fallback worked.
 - `openaiApiKey` was configured through Devvit global settings.
 - OpenAI happy path worked.
 - Unsupported AI evidence warning appeared when evidence did not validate.
+- `npm run typecheck`, `npm test`, and `npm run build` pass after the hardening changes.
+- Deterministic evidence fallback is implemented and covered by automated tests.
+- Repeated bare-domain spam detection is implemented and covered by automated tests.
+- Mocked comment-context tests now cover parent lookup, unavailable-parent handling, and rule-source propagation.
 - `npm run typecheck`, `npm test`, and `npm run build` pass.
 
 ### Pending
 
-- comment target flow
-- spam evidence after the allowed-snippet fix
-- personal-info case
-- civility or ambiguous case
-- final compact UI review
+- repeated-link spam case in the live Devvit UI
+- comment target flow in the live Devvit UI
+- fake personal-info case in the live Devvit UI
+- civility or ambiguous case in the live Devvit UI
+- final compact UI review with screenshots
 
 ## Product docs
 

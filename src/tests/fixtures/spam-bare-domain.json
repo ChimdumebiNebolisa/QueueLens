@@ -1,0 +1,21 @@
+{
+  "target": {
+    "id": "t1_demo_bare",
+    "type": "comment",
+    "subredditName": "demo",
+    "authorName": "spammer",
+    "bodyText": "Check out cheap-free-coins.example now. Free coins at cheap-free-coins.example. Visit cheap-free-coins.example for rewards.",
+    "reportReason": "spam"
+  },
+  "parentContext": [{ "text": "Please avoid promotions in this thread.", "sourceLabel": "parent" }],
+  "recentUserActivity": [{ "text": "Older: cheap-free-coins.example has rewards", "sourceLabel": "history" }],
+  "subredditRules": [
+    {
+      "id": "1",
+      "title": "No spam",
+      "description": "No unsolicited promotional links."
+    }
+  ],
+  "ruleSource": "demo_fallback",
+  "unavailableContext": []
+}

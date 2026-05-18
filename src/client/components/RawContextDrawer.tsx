@@ -9,8 +9,8 @@ export function RawContextDrawer({ result }: Props) {
 
   return (
     <section className="panel">
-      <button type="button" className="linkish" onClick={() => setOpen(!open)}>
-        {open ? 'Hide' : 'Show'} raw context bundle
+      <button type="button" className="buttonish" onClick={() => setOpen(!open)}>
+        {open ? 'Hide' : 'Show'} raw context
       </button>
       {open && <pre className="raw">{raw}</pre>}
     </section>

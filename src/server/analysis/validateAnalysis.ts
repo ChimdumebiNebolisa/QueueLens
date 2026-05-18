@@ -1,13 +1,12 @@
 import type { AIAnalysis, DeterministicSignal, EvidenceItem, ValidatedAnalysisResult } from '../types/analysis.js';
 import type { ContextBundle } from '../types/context.js';
 import { parseAIAnalysisJson } from './aiSchema.js';
+import { extractExactLinkSnippets } from './linkFragments.js';
 
 export type AllowedEvidenceSnippet = {
   source: EvidenceItem['source'];
   snippet: string;
 };
-
-const URL_RE = /\bhttps?:\/\/[^\s)]+/gi;
 
 function reportedContentText(target: ContextBundle['target']): string {
   const parts = [target.title, target.bodyText].filter(Boolean);
@@ -28,28 +27,6 @@ function addAllowedSnippet(
   snippets.push({ source, snippet: trimmed });
 }
 
-function extractUrlAndDomainSnippets(text: string): string[] {
-  const snippets: string[] = [];
-  const seen = new Set<string>();
-
-  for (const match of text.matchAll(URL_RE)) {
-    const exactUrl = match[0]?.trim();
-    if (exactUrl && !seen.has(exactUrl)) {
-      seen.add(exactUrl);
-      snippets.push(exactUrl);
-    }
-
-    const domainMatch = exactUrl?.match(/^https?:\/\/([^\/\s?#]+)/i);
-    const domain = domainMatch?.[1]?.trim();
-    if (domain && !seen.has(domain)) {
-      seen.add(domain);
-      snippets.push(domain);
-    }
-  }
-
-  return snippets;
-}
-
 /**
  * Exact snippet candidates the model is allowed to copy into evidence.
  * Validation remains a separate exact-substring check against the source bundle.
@@ -63,20 +40,20 @@ export function buildAllowedEvidenceSnippets(
 
   addAllowedSnippet(snippets, seen, 'reported_content', contextBundle.target.title);
   addAllowedSnippet(snippets, seen, 'reported_content', contextBundle.target.bodyText);
-  for (const snippet of extractUrlAndDomainSnippets(reportedContentText(contextBundle.target))) {
+  for (const snippet of extractExactLinkSnippets(reportedContentText(contextBundle.target))) {
     addAllowedSnippet(snippets, seen, 'reported_content', snippet);
   }
 
   for (const item of contextBundle.parentContext) {
     addAllowedSnippet(snippets, seen, 'parent_context', item.text);
-    for (const snippet of extractUrlAndDomainSnippets(item.text)) {
+    for (const snippet of extractExactLinkSnippets(item.text)) {
       addAllowedSnippet(snippets, seen, 'parent_context', snippet);
     }
   }
 
   for (const item of contextBundle.recentUserActivity) {
     addAllowedSnippet(snippets, seen, 'user_history', item.text);
-    for (const snippet of extractUrlAndDomainSnippets(item.text)) {
+    for (const snippet of extractExactLinkSnippets(item.text)) {
       addAllowedSnippet(snippets, seen, 'user_history', snippet);
     }
   }
@@ -118,7 +95,7 @@ function snippetMatchesHaystacks(snippet: string, haystacks: string[]): boolean 
   return haystacks.some((h) => h.includes(t));
 }
 
-function evidenceAllowedForSource(
+export function isSupportedEvidenceItem(
   item: EvidenceItem,
   haystacks: string[],
   contextBundle: ContextBundle,
@@ -143,6 +120,36 @@ function evidenceAllowedForSource(
   return false;
 }
 
+export function buildDeterministicFallbackEvidence(
+  contextBundle: ContextBundle,
+  deterministicSignals: DeterministicSignal[],
+): EvidenceItem[] {
+  const haystacks = buildEvidenceHaystacks(contextBundle, deterministicSignals);
+  const seen = new Set<string>();
+  const fallback: EvidenceItem[] = [];
+
+  for (const signal of deterministicSignals) {
+    const snippet = signal.matchedText?.trim();
+    if (!snippet) continue;
+    if (seen.has(snippet)) continue;
+
+    const item: EvidenceItem = {
+      snippet,
+      source: 'deterministic_signal',
+      reason: signal.reason,
+    };
+
+    if (!isSupportedEvidenceItem(item, haystacks, contextBundle, deterministicSignals)) {
+      continue;
+    }
+
+    seen.add(snippet);
+    fallback.push(item);
+  }
+
+  return fallback;
+}
+
 /**
  * Validates parsed AI analysis: enum + schema already applied via Zod before calling.
  * Strips hallucinated evidence; downgrades high priority without valid evidence per guardrails.
@@ -158,6 +165,7 @@ export function validateAnalysis(
       status: 'error',
       contextBundle,
       deterministicSignals,
+      evidenceFallbackUsed: false,
       validationWarnings: [parsed.error],
       safeFallbackMessage: 'AI output did not match the expected schema.',
     };
@@ -168,7 +176,7 @@ export function validateAnalysis(
   const kept: EvidenceItem[] = [];
 
   for (const ev of parsed.value.evidence) {
-    if (evidenceAllowedForSource(ev, haystacks, contextBundle, deterministicSignals)) {
+    if (isSupportedEvidenceItem(ev, haystacks, contextBundle, deterministicSignals)) {
       kept.push(ev);
     } else {
       warnings.push(`Removed unsupported evidence snippet for source "${ev.source}".`);
@@ -196,6 +204,7 @@ export function validateAnalysis(
     contextBundle,
     deterministicSignals,
     aiAnalysis: ai,
+    evidenceFallbackUsed: false,
     validationWarnings: warnings,
   };
 }

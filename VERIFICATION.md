@@ -14,6 +14,11 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
 - OpenAI happy path worked.
 - Evidence validation warning appeared for unsupported AI evidence.
 - Allowed evidence snippets and repeated-link detection were added afterward.
+- Port `5678` was reclaimed again in this pass by stopping a stale workspace `node` process.
+- `npm run dev` reached Playtest ready again in this pass.
+- Deterministic evidence fallback is now implemented after validation, not by weakening the validator.
+- Repeated bare-domain spam detection is now implemented.
+- Fake personal-info redaction and low-severity deterministic detection are now implemented for demo use.
 - Automated verification currently passes:
   - `npm run typecheck`
   - `npm test`
@@ -26,8 +31,9 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
 | Command | Exit | Result summary |
 | --- | --- | --- |
 | `npm run typecheck` | `0` | TypeScript project build passed |
-| `npm test` | `0` | Vitest passed |
+| `npm test` | `0` | Vitest passed: 6 files, 24 tests |
 | `npm run build` | `0` | Devvit build passed with non-blocking warnings |
+| `npm run dev` | observed | Playtest ready reached after reclaiming port `5678` |
 
 ### Current test coverage proven by automation
 
@@ -50,6 +56,13 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
   - unsupported high-priority output downgraded
 - `src/tests/integration/analysisFlow.test.ts`
   - deterministic plus validation flow works on a fixture bundle
+- `src/tests/pipeline.test.ts`
+  - deterministic fallback appears when AI evidence is empty
+  - fallback does not replace already-valid AI evidence
+- `src/tests/redditContext.test.ts`
+  - comment target parent-post context path
+  - unavailable parent note path
+  - live vs demo-fallback rule source propagation
 
 ## Manual verification completed
 
@@ -62,16 +75,17 @@ These manual results are the current baseline and must not be downgraded unless 
 - `openaiApiKey` was configured through Devvit global settings.
 - OpenAI happy path worked.
 - Unsupported AI evidence warning appeared in the UI or run output.
+- In this pass, `npm run dev` again reached Playtest ready after reclaiming port `5678`.
 
 ## Manual verification pending
 
 These items are still pending and must not be described as working until re-verified:
 
-- Comment target flow.
-- Spam evidence after the allowed-snippet fix.
-- Personal-info test case.
-- Civility or ambiguous case.
-- Final compact UI review.
+- Comment target flow in live Reddit UI.
+- Spam evidence after the allowed-snippet fix in live Reddit UI.
+- Fake personal-info test case in live Reddit UI.
+- Civility or ambiguous case in live Reddit UI.
+- Final compact UI review with screenshots.
 
 ## Historical issue now resolved
 
@@ -79,6 +93,7 @@ These items are still pending and must not be described as working until re-veri
 
 - `npm run dev` was previously blocked by `EADDRINUSE` on port `5678`.
 - That blocker was later resolved.
+- In this pass, the port was blocked again by a stale workspace `node` process and was resolved locally by stopping that process before retrying playtest.
 - The current baseline is not "playtest blocked."
 - The current baseline is "Playtest ready was reached."
 
@@ -95,6 +110,9 @@ Required wording:
 - Unsupported AI evidence is rejected and produces a warning.
 - Allowed evidence snippets were added to the AI prompt to improve exact-evidence generation.
 - Repeated-link detection was improved to emit exact `matchedText`.
+- Repeated bare-domain detection now emits exact `matchedText`.
+- Deterministic evidence fallback now attaches exact validated signal evidence only after validation when AI evidence is empty.
+- Fake email and phone literals are redacted before analysis and can surface as exact redacted evidence.
 - High-priority output without valid evidence still downgrades safely.
 
 ### Still pending in the live UI

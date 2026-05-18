@@ -12,30 +12,38 @@ export type GatherSession = {
   subredditName: string;
 };
 
+type LoadedRules = {
+  rules: SubredditRule[];
+  ruleSource: ContextBundle['ruleSource'];
+};
+
 function note(unavailable: UnavailableContextNote[], domain: string, reason: string) {
   unavailable.push({ domain, reason });
 }
 
-async function loadRules(subredditName: string, unavailable: UnavailableContextNote[]): Promise<SubredditRule[]> {
+async function loadRules(subredditName: string, unavailable: UnavailableContextNote[]): Promise<LoadedRules> {
   try {
     const sub = await reddit.getSubredditByName(subredditName);
     const rules = await sub.getRules();
     if (!rules?.length) {
       note(unavailable, 'subreddit_rules', 'Subreddit returned no rules; using demo rules.');
-      return DEMO_SUBREDDIT_RULES;
+      return { rules: DEMO_SUBREDDIT_RULES, ruleSource: 'demo_fallback' };
     }
-    return rules.map((r: { shortName?: string; description?: string }, i: number) => ({
-      id: String(i),
-      title: truncateString(redactFreeText(r.shortName ?? `Rule ${i + 1}`), 500),
-      description: truncateString(redactFreeText(r.description ?? ''), CONTEXT_LIMITS.maxRuleDescriptionChars),
-    }));
+    return {
+      ruleSource: 'live',
+      rules: rules.map((r: { shortName?: string; description?: string }, i: number) => ({
+        id: String(i),
+        title: truncateString(redactFreeText(r.shortName ?? `Rule ${i + 1}`), 500),
+        description: truncateString(redactFreeText(r.description ?? ''), CONTEXT_LIMITS.maxRuleDescriptionChars),
+      })),
+    };
   } catch (e) {
     note(
       unavailable,
       'subreddit_rules',
       e instanceof Error ? e.message : 'Unable to load subreddit rules; using demo rules.',
     );
-    return DEMO_SUBREDDIT_RULES;
+    return { rules: DEMO_SUBREDDIT_RULES, ruleSource: 'demo_fallback' };
   }
 }
 
@@ -110,7 +118,10 @@ async function loadParentContext(
       const post = await reddit.getPostById(asRedditPostId(parentId));
       const body = post.body ?? '';
       const text = [post.title, body].filter(Boolean).join('\n');
-      if (!text) return [];
+      if (!text) {
+        note(unavailable, 'parent_context', 'Parent post was available but had no usable text.');
+        return [];
+      }
       return [
         {
           id: post.id,
@@ -122,7 +133,10 @@ async function loadParentContext(
 
     if (parentId.startsWith('t1_')) {
       const parentComment = await reddit.getCommentById(asRedditCommentId(parentId));
-      if (!parentComment.body) return [];
+      if (!parentComment.body) {
+        note(unavailable, 'parent_context', 'Parent comment was available but had no usable text.');
+        return [];
+      }
       return [
         {
           id: parentComment.id,
@@ -177,7 +191,7 @@ export async function gatherRedditContext(session: GatherSession): Promise<Conte
 
   const parentContext = (await loadParentContext(session, unavailable)).slice(0, CONTEXT_LIMITS.maxParentItems);
 
-  const subredditRules = await loadRules(session.subredditName, unavailable);
+  const { rules: subredditRules, ruleSource } = await loadRules(session.subredditName, unavailable);
   const recentUserActivity = await recentActivityForAuthor(target.authorName, unavailable);
 
   return {
@@ -185,6 +199,7 @@ export async function gatherRedditContext(session: GatherSession): Promise<Conte
     parentContext,
     recentUserActivity,
     subredditRules,
+    ruleSource,
     unavailableContext: unavailable,
   };
 }

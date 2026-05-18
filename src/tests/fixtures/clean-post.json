@@ -1,12 +1,12 @@
 {
   "target": {
-    "id": "t3_amb",
+    "id": "t3_clean",
     "type": "post",
     "subredditName": "demo",
-    "authorName": "newbie",
-    "title": "Is this allowed?",
-    "bodyText": "I posted a question about local restaurants — not sure why it was reported.",
-    "reportReason": "custom: low effort"
+    "authorName": "tester",
+    "title": "hi this is a test post",
+    "bodyText": "Just checking whether this post renders cleanly.",
+    "reportReason": null
   },
   "parentContext": [],
   "recentUserActivity": [],

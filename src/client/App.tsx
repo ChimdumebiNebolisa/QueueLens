@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import type { ValidatedAnalysisResult } from '../shared/queueLensDomain.js';
 import { fetchValidatedAnalysis } from './api.js';
 import { DecisionCard } from './components/DecisionCard.js';
-import { EvidencePanel } from './components/EvidencePanel.js';
-import { ConfidenceBadge } from './components/ConfidenceBadge.js';
 import { SignalList } from './components/SignalList.js';
 import { RawContextDrawer } from './components/RawContextDrawer.js';
 import { StatePanel } from './components/StatePanel.js';
@@ -53,7 +51,6 @@ export function App() {
     <main className="app">
       <header className="top">
         <h1>QueueLens</h1>
-        {result.aiAnalysis && <ConfidenceBadge level={result.aiAnalysis.confidence} />}
       </header>
 
       <StatePanel
@@ -66,8 +63,6 @@ export function App() {
       />
 
       <DecisionCard result={result} />
-
-      {result.aiAnalysis && <EvidencePanel items={result.aiAnalysis.evidence} />}
 
       <SignalList signals={result.deterministicSignals} />
 

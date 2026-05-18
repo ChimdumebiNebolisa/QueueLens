@@ -16,5 +16,6 @@
       "description": "No unsolicited promotional links."
     }
   ],
+  "ruleSource": "demo_fallback",
   "unavailableContext": []
 }
