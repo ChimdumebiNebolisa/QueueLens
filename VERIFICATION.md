@@ -88,6 +88,47 @@ These items are still pending and must not be described as working until re-veri
 - Final compact UI review with screenshots.
 - In this pass, an attempted browser-automation fallback against `https://www.reddit.com/` and `https://www.reddit.com/r/queuelens_dev/?playtest=queuelens` was blocked by Reddit network security before the subreddit UI loaded, so these four live cases could not be executed from the current automation session.
 
+## Live Chrome extension attempt on 2026-05-18 17:04:04 -05:00
+
+- Browser path used: Codex Chrome extension in the signed-in Chrome session.
+- Subreddit: `r/queuelens_dev`
+- Playtest URL: `https://www.reddit.com/r/queuelens_dev/?playtest=queuelens`
+
+### Observed setup state
+
+- The Chrome extension connection succeeded.
+- The signed-in subreddit page loaded successfully in Chrome.
+- The `Analyze with QueueLens` moderation menu item was visible in the live Reddit UI.
+- A temporary post fixture was created in the test subreddit:
+  - title: `[QueueLens E2E] Bare-domain spam fixture`
+  - body: `cheapwidgets.example cheapwidgets.example cheapwidgets.example`
+
+### Case results from this live attempt
+
+- Case 1: bare-domain spam
+  - status: blocked
+  - observed result: the moderator menu showed `Analyze with QueueLens`, but repeated click and keyboard activation attempts through the Chrome extension did not open a QueueLens review card, did not create a visible new QueueLens session card, and did not change the current tab URL.
+  - screenshot paths:
+    - `C:\Users\Chimdumebi\DevvitTemp\manual-artifacts\queuelens-live-2026-05-18\03-case1-after-post-attempt.png`
+    - `C:\Users\Chimdumebi\DevvitTemp\manual-artifacts\queuelens-live-2026-05-18\04b-case1-menu-with-ql.png`
+    - `C:\Users\Chimdumebi\DevvitTemp\manual-artifacts\queuelens-live-2026-05-18\05b-case1-after-ql-click.png`
+    - `C:\Users\Chimdumebi\DevvitTemp\manual-artifacts\queuelens-live-2026-05-18\05d-case1-after-keyboard-action.png`
+- Case 2: comment target flow
+  - status: not run
+  - observed result: not executed because the shared live blocker happened at the QueueLens moderation-action step in case 1.
+- Case 3: fake personal-info
+  - status: not run
+  - observed result: not executed because the shared live blocker happened at the QueueLens moderation-action step in case 1.
+- Case 4: ambiguous civility
+  - status: not run
+  - observed result: not executed because the shared live blocker happened at the QueueLens moderation-action step in case 1.
+
+### Live-testing blocker observed in this attempt
+
+- Chrome extension control was available, but the QueueLens moderation action could not be driven to an opened review card reliably enough to claim a verified pass.
+- Several later Chrome-extension browser commands timed out or detached while interacting with the heavy Reddit page, so this attempt does not prove a product fix or product regression by itself.
+- Because the review card never opened in this attempt, no evidence panel, quality checks, or raw-context drawer could be honestly marked as verified from this run.
+
 ## Historical issue now resolved
 
 ### Previous playtest blocker
