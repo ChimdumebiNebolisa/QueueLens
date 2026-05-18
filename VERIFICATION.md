@@ -86,6 +86,7 @@ These items are still pending and must not be described as working until re-veri
 - Fake personal-info test case in live Reddit UI.
 - Civility or ambiguous case in live Reddit UI.
 - Final compact UI review with screenshots.
+- In this pass, an attempted browser-automation fallback against `https://www.reddit.com/` and `https://www.reddit.com/r/queuelens_dev/?playtest=queuelens` was blocked by Reddit network security before the subreddit UI loaded, so these four live cases could not be executed from the current automation session.
 
 ## Historical issue now resolved
 
@@ -126,6 +127,8 @@ Required wording:
 - Comment support is exposed in the menu, but end-to-end manual verification is still pending.
 - Post-target flow is verified; comment-target flow is not yet verified.
 - The current automation proves validator and signal behavior, not the full live Devvit UI for every case.
+- The requested authenticated Chrome or Browser plugin automation was not callable in this session, so the fallback Playwright path was used only to probe access and capture the blocker state.
+- The fallback Playwright session hit Reddit's network-security block page before login or moderator UI state could be inspected.
 
 ## Next manual checks
 
