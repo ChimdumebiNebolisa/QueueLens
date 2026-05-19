@@ -2,179 +2,160 @@
 
 All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens`.
 
-## Current verified state
+## Final verification snapshot
 
-- QueueLens is running in the active repo at `C:\Users\Chimdumebi\DevvitTemp\queuelens`.
-- Devvit playtest previously had a port `5678` blocker, but that was later resolved.
-- `npm run dev` reached Playtest ready.
-- QueueLens opened inside `r/queuelens_dev`.
-- Post menu/session flow worked.
-- Missing OpenAI key fallback worked.
-- Devvit global setting `openaiApiKey` was configured.
-- OpenAI happy path worked.
-- Evidence validation warning appeared for unsupported AI evidence.
-- Allowed evidence snippets and repeated-link detection were added afterward.
-- Port `5678` was reclaimed again in this pass by stopping a stale workspace `node` process.
-- `npm run dev` reached Playtest ready again in this pass.
-- Deterministic evidence fallback is now implemented after validation, not by weakening the validator.
-- Repeated bare-domain spam detection is now implemented.
-- Fake personal-info redaction and low-severity deterministic detection are now implemented for demo use.
-- Automated verification currently passes:
-  - `npm run typecheck`
-  - `npm test`
-  - `npm run build`
-
-## Automated verification
-
-### Current passing commands
-
-| Command | Exit | Result summary |
-| --- | --- | --- |
-| `npm run typecheck` | `0` | TypeScript project build passed |
-| `npm test` | `0` | Vitest passed: 6 files, 24 tests |
-| `npm run build` | `0` | Devvit build passed with non-blocking warnings |
-| `npm run dev` | observed | Playtest ready reached after reclaiming port `5678` |
-
-### Current test coverage proven by automation
-
-- `src/tests/deterministicSignals.test.ts`
-  - rule-title phrase signal
-  - repeated-domain signal
-  - unavailable-context signal
-- `src/tests/aiSchema.test.ts`
-  - valid schema pass
-  - missing field fail
-  - invalid enum fail
-  - malformed input fail-safe
-- `src/tests/validateAnalysis.test.ts`
-  - exact reported-content evidence pass
-  - exact parent-context evidence pass
-  - exact subreddit-rule evidence pass
-  - invented evidence stripped
-  - paraphrased evidence stripped
-  - exact deterministic-signal evidence pass
-  - unsupported high-priority output downgraded
-- `src/tests/integration/analysisFlow.test.ts`
-  - deterministic plus validation flow works on a fixture bundle
-- `src/tests/pipeline.test.ts`
-  - deterministic fallback appears when AI evidence is empty
-  - fallback does not replace already-valid AI evidence
-- `src/tests/redditContext.test.ts`
-  - comment target parent-post context path
-  - unavailable parent note path
-  - live vs demo-fallback rule source propagation
-
-## Manual verification completed
-
-These manual results are the current baseline and must not be downgraded unless newer evidence disproves them:
-
-- Devvit playtest reached Playtest ready.
-- QueueLens opened in `r/queuelens_dev`.
-- Post menu/session flow worked.
-- Missing OpenAI key fallback worked.
-- `openaiApiKey` was configured through Devvit global settings.
-- OpenAI happy path worked.
-- Unsupported AI evidence warning appeared in the UI or run output.
-- In this pass, `npm run dev` again reached Playtest ready after reclaiming port `5678`.
-
-## Manual verification pending
-
-These items are still pending and must not be described as working until re-verified:
-
-- Comment target flow in live Reddit UI.
-- Spam evidence after the allowed-snippet fix in live Reddit UI.
-- Fake personal-info test case in live Reddit UI.
-- Civility or ambiguous case in live Reddit UI.
-- Final compact UI review with screenshots.
-- In this pass, an attempted browser-automation fallback against `https://www.reddit.com/` and `https://www.reddit.com/r/queuelens_dev/?playtest=queuelens` was blocked by Reddit network security before the subreddit UI loaded, so these four live cases could not be executed from the current automation session.
-
-## Live Chrome extension attempt on 2026-05-18 17:04:04 -05:00
-
-- Browser path used: Codex Chrome extension in the signed-in Chrome session.
+- Date: `2026-05-19`
+- Playtest version observed: `v0.0.1.54`
 - Subreddit: `r/queuelens_dev`
 - Playtest URL: `https://www.reddit.com/r/queuelens_dev/?playtest=queuelens`
+- Browser path used:
+  - Codex Chrome extension for live navigation and inspection
+  - Manual click / manual visual confirmation where Chrome interaction or embedded-card extraction was not reliable
 
-### Observed setup state
+## Files changed
 
-- The Chrome extension connection succeeded.
-- The signed-in subreddit page loaded successfully in Chrome.
-- The `Analyze with QueueLens` moderation menu item was visible in the live Reddit UI.
-- A temporary post fixture was created in the test subreddit:
+- `devvit.json`
+- `src/server/routes/menuAnalyze.ts`
+- `src/tests/menuAnalyze.test.ts`
+
+## Commands run
+
+- `npm run dev`
+- `npm run typecheck`
+- `npm test`
+- `npm run build`
+- `git status --short`
+
+## Code changes verified in this pass
+
+- Moderator action handoff now uses an absolute Reddit URL built from `post.permalink`.
+- Missing or invalid targets now produce visible toasts instead of failing silently.
+- Post and comment menu entries are registered separately in `devvit.json`.
+- Recursive analysis of QueueLens-generated analysis posts is blocked with toast:
+  - `QueueLens analysis posts cannot be analyzed.`
+- Regression coverage was added for:
+  - absolute handoff URL
+  - missing-target toast
+  - recursive-analysis guardrail toast
+
+## Final case matrix
+
+### Case 1: bare-domain spam
+
+- Status: `pass`
+- Fixture:
   - title: `[QueueLens E2E] Bare-domain spam fixture`
   - body: `cheapwidgets.example cheapwidgets.example cheapwidgets.example`
+- Observed result:
+  - QueueLens analysis custom post opened.
+  - Review card rendered.
+  - Exact evidence snippets rendered.
+  - Deterministic repeated-domain signal rendered.
+  - Analysis quality checks rendered.
+  - Raw context drawer opened.
+- Screenshot paths:
+  - `C:\Users\Chimdumebi\DevvitTemp\manual-artifacts\queuelens-live-2026-05-19\case1-review-ui-open.png`
+  - `C:\Users\Chimdumebi\DevvitTemp\manual-artifacts\queuelens-live-2026-05-19\case1-decision-and-quality.png`
+  - `C:\Users\Chimdumebi\DevvitTemp\manual-artifacts\queuelens-live-2026-05-19\case1-quality-checks-final.png`
+  - `C:\Users\Chimdumebi\DevvitTemp\manual-artifacts\queuelens-live-2026-05-19\case1-raw-context-open.png`
 
-### Case results from this live attempt
+### Case 2: comment target flow
 
-- Case 1: bare-domain spam
-  - status: blocked
-  - observed result: the moderator menu showed `Analyze with QueueLens`, but repeated click and keyboard activation attempts through the Chrome extension did not open a QueueLens review card, did not create a visible new QueueLens session card, and did not change the current tab URL.
-  - screenshot paths:
-    - `C:\Users\Chimdumebi\DevvitTemp\manual-artifacts\queuelens-live-2026-05-18\03-case1-after-post-attempt.png`
-    - `C:\Users\Chimdumebi\DevvitTemp\manual-artifacts\queuelens-live-2026-05-18\04b-case1-menu-with-ql.png`
-    - `C:\Users\Chimdumebi\DevvitTemp\manual-artifacts\queuelens-live-2026-05-18\05b-case1-after-ql-click.png`
-    - `C:\Users\Chimdumebi\DevvitTemp\manual-artifacts\queuelens-live-2026-05-18\05d-case1-after-keyboard-action.png`
-- Case 2: comment target flow
-  - status: not run
-  - observed result: not executed because the shared live blocker happened at the QueueLens moderation-action step in case 1.
-- Case 3: fake personal-info
-  - status: not run
-  - observed result: not executed because the shared live blocker happened at the QueueLens moderation-action step in case 1.
-- Case 4: ambiguous civility
-  - status: not run
-  - observed result: not executed because the shared live blocker happened at the QueueLens moderation-action step in case 1.
+- Status: `fail / unstable`
+- Fixture used:
+  - existing live spam comment under `https://www.reddit.com/r/queuelens_dev/comments/1tg594v/test_post/?playtest=queuelens`
+  - comment text included `https://spam.example` and `https://spam.example/extra`
+- Final targeted attempt:
+  - the comment-level moderation button was present and opened
+  - the visible live menu showed comment moderation actions such as `Mark as Spam` and `Show mod label`
+  - the QueueLens item was present in assigned DOM / async content for the comment action row, but it did not appear as a visible selectable live menu item in the final targeted attempt
+  - because the QueueLens comment action did not become visibly selectable in that final attempt, the review UI was not live-proven for a comment target
+- Observed result:
+  - comment-level registration exists after the `devvit.json` split
+  - live visibility of the QueueLens comment action is still inconsistent
+  - comment-target analysis is not yet proven end to end
+- Screenshot paths:
+  - no new stable screenshot was captured for the failing final targeted attempt
 
-### Live-testing blocker observed in this attempt
+### Case 3: fake personal-info
 
-- Chrome extension control was available, but the QueueLens moderation action could not be driven to an opened review card reliably enough to claim a verified pass.
-- Several later Chrome-extension browser commands timed out or detached while interacting with the heavy Reddit page, so this attempt does not prove a product fix or product regression by itself.
-- Because the review card never opened in this attempt, no evidence panel, quality checks, or raw-context drawer could be honestly marked as verified from this run.
+- Status: `pass with behavior concern`
+- Fixture:
+  - title: `[QueueLens E2E] Fake personal-info fixture`
+  - body: `[QueueLens E2E] Fake personal-info fixture. Contact me at test.user@example.com or 555-0100. This is synthetic test data only.`
+- Analysis custom-post URL:
+  - `https://www.reddit.com/r/queuelens_dev/comments/1thtj6m/queuelens_analysis/`
+- Observed result:
+  - QueueLens review card visible: `yes`
+  - Redacted placeholders visible: `yes`
+  - Raw unredacted `test.user@example.com` visible in QueueLens review UI: `no`
+  - Raw unredacted `555-0100` visible in QueueLens review UI: `no`
+  - Analysis quality visible: `yes`
+  - Raw context availability visible: `yes`
+- Concern to record:
+  - the result was labeled high priority / high confidence with suggested action `remove`
+  - that may be too aggressive for clearly synthetic fixture text
+  - this is a product-behavior concern, not a redaction failure
+- Screenshot paths:
+  - no local screenshot file path was captured in this workspace for case 3
 
-## Historical issue now resolved
+### Case 4: ambiguous civility
 
-### Previous playtest blocker
+- Status: `pass with evidence caveat`
+- Fixture:
+  - title: `[QueueLens E2E] Ambiguous civility fixture`
+  - body: `[QueueLens E2E] Ambiguous civility fixture. This reply is annoying and unhelpful, but I am not sure it clearly breaks a rule.`
+- Analysis custom-post URL:
+  - `https://www.reddit.com/r/queuelens_dev/comments/1thuc1z/queuelens_analysis/`
+- Observed result:
+  - QueueLens review card visible: `yes`
+  - Exact fixture text quoted in evidence: `partial`
+  - Suggested action/confidence: `cautious`
+  - Analysis quality visible: `yes`
+  - Raw context drawer visible/openable: `yes`
+- Caveat to record:
+  - the evidence panel quoted the fixture title and relevant rules
+  - available screenshots did not show the full body sentence quoted end to end
+  - the UI also showed a partial-result warning and removed unsupported evidence
+- Screenshot paths:
+  - no local screenshot file path was captured in this workspace for case 4
 
-- `npm run dev` was previously blocked by `EADDRINUSE` on port `5678`.
-- That blocker was later resolved.
-- In this pass, the port was blocked again by a stale workspace `node` process and was resolved locally by stopping that process before retrying playtest.
-- The current baseline is not "playtest blocked."
-- The current baseline is "Playtest ready was reached."
+## Recursive-analysis guardrail
 
-Required wording:
+- Status: `locally verified`
+- Scope:
+  - if the selected target is a QueueLens-generated analysis post, the route does not analyze it
+- Visible user-facing behavior:
+  - toast: `QueueLens analysis posts cannot be analyzed.`
+- Regression test:
+  - added in `src/tests/menuAnalyze.test.ts`
 
-- Use: `npm run dev: previously blocked by EADDRINUSE on port 5678, later resolved; Playtest ready was reached`
-- Do not use: `npm run dev: still blocked by EADDRINUSE on port 5678`
+## Local automated verification
 
-## Evidence reliability status
+### Before final write-up
 
-### Verified
+- `npm run typecheck`: passed
+- `npm test`: passed, `7 files / 27 tests`
+- `npm run build`: passed
+- `npm run dev`: observed Playtest ready at `v0.0.1.54`
 
-- Evidence validation remains strict.
-- Unsupported AI evidence is rejected and produces a warning.
-- Allowed evidence snippets were added to the AI prompt to improve exact-evidence generation.
-- Repeated-link detection was improved to emit exact `matchedText`.
-- Repeated bare-domain detection now emits exact `matchedText`.
-- Deterministic evidence fallback now attaches exact validated signal evidence only after validation when AI evidence is empty.
-- Fake email and phone literals are redacted before analysis and can surface as exact redacted evidence.
-- High-priority output without valid evidence still downgrades safely.
+### Final rerun status
 
-### Still pending in the live UI
+- `npm run typecheck`: passed
+- `npm test`: passed, `7 files / 27 tests`
+- `npm run build`: passed
 
-- Spam evidence after the allowed-snippet fix still needs a manual UI re-test.
-- Comment-target evidence behavior still needs manual verification.
-- Personal-info and civility case evidence still need manual verification.
+## Known caveats
 
-## Current known limits
+- Case 2 comment-target flow is still not live-proven end to end.
+- Case 3 shows safe redaction behavior, but prioritization / suggested action appears too aggressive for synthetic content.
+- Case 4 is appropriately cautious overall, but the available evidence view was only partially shown in screenshots.
 
-- Comment support is exposed in the menu, but end-to-end manual verification is still pending.
-- Post-target flow is verified; comment-target flow is not yet verified.
-- The current automation proves validator and signal behavior, not the full live Devvit UI for every case.
-- The requested authenticated Chrome or Browser plugin automation was not callable in this session, so the fallback Playwright path was used only to probe access and capture the blocker state.
-- The fallback Playwright session hit Reddit's network-security block page before login or moderator UI state could be inspected.
+## Submission readiness
 
-## Next manual checks
-
-1. Re-test the repeated-link spam case in the Devvit UI after the allowed-snippet change.
-2. Run a full comment-target flow end to end.
-3. Run a fake personal-info test case.
-4. Run a civility or ambiguous case.
-5. Do a final compact UI review once demo-hardening polish lands.
+- QueueLens is **not fully ready for submission** yet.
+- Reason:
+  - case 1 is proven
+  - case 3 is proven with a behavior concern
+  - case 4 is proven with an evidence caveat
+  - case 2 comment-target flow remains unstable and is not honestly proven end to end

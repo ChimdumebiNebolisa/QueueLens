@@ -22,7 +22,14 @@
       {
         "label": "Analyze with QueueLens",
         "description": "Open an evidence-backed QueueLens review card for this post or comment.",
-        "location": ["post", "comment"],
+        "location": "post",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/analyze-with-queuelens"
+      },
+      {
+        "label": "Analyze with QueueLens",
+        "description": "Open an evidence-backed QueueLens review card for this post or comment.",
+        "location": "comment",
         "forUserType": "moderator",
         "endpoint": "/internal/menu/analyze-with-queuelens"
       }

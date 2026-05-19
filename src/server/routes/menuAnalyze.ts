@@ -4,65 +4,131 @@ import type { MenuItemRequest, UiResponse } from '@devvit/web/shared';
 
 export const menuAnalyze = new Hono();
 
+function toast(text: string, appearance: 'neutral' | 'success' = 'neutral'): UiResponse {
+  return {
+    showToast: {
+      text,
+      appearance,
+    },
+  };
+}
+
+function isQueueLensAnalysisPost(post: {
+  title?: string | null;
+  authorName?: string | null;
+  permalink?: string | null;
+}): boolean {
+  return (
+    post.title === 'QueueLens analysis' &&
+    (post.authorName === 'queuelens' || post.permalink?.includes('/queuelens_analysis/') === true)
+  );
+}
+
 menuAnalyze.post('/analyze-with-queuelens', async (c) => {
   let input: MenuItemRequest;
   try {
     input = await c.req.json<MenuItemRequest>();
   } catch {
-    return c.json<UiResponse>({
-      showToast: {
-        text: 'QueueLens: invalid menu request.',
-        appearance: 'neutral',
-      },
-    });
+    console.error('QueueLens menu invalid request: body was not valid JSON');
+    return c.json<UiResponse>(toast('QueueLens: invalid menu request.'));
   }
 
   const { subredditName } = context;
+  const contextRecord = context as Record<string, unknown>;
+  const currentUsername =
+    typeof contextRecord.username === 'string'
+      ? contextRecord.username
+      : typeof contextRecord.userName === 'string'
+        ? contextRecord.userName
+        : null;
+  const modStatus =
+    typeof contextRecord.isModerator === 'boolean'
+      ? contextRecord.isModerator
+      : typeof contextRecord.isMod === 'boolean'
+        ? contextRecord.isMod
+        : null;
+
+  console.log(
+    'QueueLens menu start',
+    JSON.stringify({
+      location: input.location,
+      targetId: input.targetId,
+      subredditName,
+      currentUsername,
+      modStatus,
+    }),
+  );
 
   if (input.location === 'subreddit') {
-    return c.json<UiResponse>({
-      showToast: {
-        text: 'QueueLens: subreddit menu location is not supported. Use the action on a post or comment.',
-        appearance: 'neutral',
-      },
-    });
+    console.error('QueueLens menu unsupported location', input.location);
+    return c.json<UiResponse>(
+      toast('QueueLens: subreddit menu location is not supported. Use the action on a post or comment.'),
+    );
   }
 
   if (!subredditName) {
-    return c.json<UiResponse>({
-      showToast: {
-        text: 'QueueLens: missing subreddit context.',
-        appearance: 'neutral',
-      },
-    });
+    console.error('QueueLens menu missing subreddit context');
+    return c.json<UiResponse>(toast('QueueLens: missing subreddit context.'));
   }
 
   const targetId = input.targetId;
   const targetType = input.location === 'comment' ? 'comment' : 'post';
 
-  if (targetType === 'comment' && !targetId.startsWith('t1_')) {
-    return c.json<UiResponse>({
-      showToast: {
-        text: 'QueueLens: comment target id was not a comment thing id (t1_…).',
-        appearance: 'neutral',
-      },
-    });
+  if (!targetId || typeof targetId !== 'string') {
+    console.error(
+      'QueueLens menu missing target id',
+      JSON.stringify({
+        location: input.location,
+        subredditName,
+        rawInput: input,
+      }),
+    );
+    return c.json<UiResponse>(toast('QueueLens could not open because the selected target was missing.'));
   }
+
+  if (targetType === 'comment' && !targetId.startsWith('t1_')) {
+    console.error('QueueLens menu invalid comment target', targetId);
+    return c.json<UiResponse>(toast('QueueLens: comment target id was not a comment thing id (t1_...).'));
+  }
+
   if (targetType === 'post' && !targetId.startsWith('t3_')) {
-    return c.json<UiResponse>({
-      showToast: {
-        text: 'QueueLens: post target id was not a post thing id (t3_…).',
-        appearance: 'neutral',
-      },
-    });
+    console.error('QueueLens menu invalid post target', targetId);
+    return c.json<UiResponse>(toast('QueueLens: post target id was not a post thing id (t3_...).'));
   }
 
   try {
+    if (targetType === 'post') {
+      const targetPost = await reddit.getPostById(targetId as `t3_${string}`);
+      if (isQueueLensAnalysisPost(targetPost)) {
+        console.error('QueueLens menu blocked analysis post target', targetId);
+        return c.json<UiResponse>(toast('QueueLens analysis posts cannot be analyzed.'));
+      }
+    }
+
+    console.log(
+      'QueueLens menu submitCustomPost start',
+      JSON.stringify({ subredditName, targetId, targetType }),
+    );
+
     const post = await reddit.submitCustomPost({
       subredditName,
       title: 'QueueLens analysis',
       entry: 'default',
     });
+
+    const queueLensPostUrl = post.permalink.startsWith('http')
+      ? post.permalink
+      : `https://www.reddit.com${post.permalink}`;
+
+    console.log(
+      'QueueLens menu submitCustomPost success',
+      JSON.stringify({
+        queueLensPostId: post.id,
+        queueLensPostUrl,
+        queueLensPostPermalink: post.permalink,
+        queueLensRawPostUrl: post.url,
+      }),
+    );
 
     const payload = JSON.stringify({
       targetType,
@@ -74,20 +140,28 @@ menuAnalyze.post('/analyze-with-queuelens', async (c) => {
     await redis.set(key, payload);
     await redis.expire(key, 3600);
 
+    console.log(
+      'QueueLens menu session stored',
+      JSON.stringify({ key, targetId, targetType, subredditName }),
+    );
+
     return c.json<UiResponse>({
       showToast: {
-        text: 'Opening QueueLens…',
+        text: 'Opening QueueLens...',
         appearance: 'success',
       },
-      navigateTo: post.url,
+      navigateTo: queueLensPostUrl,
     });
   } catch (e) {
-    console.error('QueueLens menu error', e instanceof Error ? e.message : e);
-    return c.json<UiResponse>({
-      showToast: {
-        text: 'QueueLens could not start. Try again later.',
-        appearance: 'neutral',
-      },
-    });
+    console.error(
+      'QueueLens menu error',
+      JSON.stringify({
+        targetId,
+        targetType,
+        subredditName,
+        message: e instanceof Error ? e.message : String(e),
+      }),
+    );
+    return c.json<UiResponse>(toast('QueueLens could not start. Try again later.'));
   }
 });
