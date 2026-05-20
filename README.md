@@ -25,9 +25,9 @@ QueueLens is advisory only. It does not remove content, ban users, lock threads,
 1. A moderator opens the menu on a post or comment.
 2. The moderator selects `Analyze with QueueLens`.
 3. The server gets or creates one reusable **QueueLens Review Desk** custom post per subreddit (`submitCustomPost` on first use only).
-4. The server stores a short-lived Redis handoff at `queuelens:{deskPostId}` with the selected target (`targetType`, `targetId`, `subredditName`) and navigates to the Review Desk URL.
+4. Each Analyze creates a unique short-lived analysis session in Redis at `queuelens:analysis:{analysisSessionId}` (about 1 hour TTL) with the selected target and desk post id, writes that session id to Review Desk **postData** keyed by the current moderator user id (`reddit.mergePostData`), then navigates to the Review Desk URL (query param is appended for debug only).
 5. The Review Desk loads the `splash` entrypoint.
-6. `App.tsx` calls `GET /api/analyze`.
+6. `App.tsx` calls `GET /api/analyze?analysisSessionId=...` using the session id from Review Desk postData for the signed-in user (URL query and hash are fallback/debug only).
 7. The server gathers bounded Reddit context, runs deterministic signals, builds the AI prompt, calls OpenAI, validates schema, validates exact evidence, and returns a trusted result.
 8. The client renders the decision card, evidence panel, signal list, and raw context drawer.
 
@@ -113,7 +113,7 @@ QueueLens also provides a strict list of allowed evidence snippets so the model 
 - QueueLens does not expose the OpenAI key to the client.
 - QueueLens does not log secrets.
 - QueueLens does not store long-term user profiles.
-- Redis stores the subreddit Review Desk pointer (`queuelens:desk:{subredditName}`) and short-lived analyze handoff (`queuelens:{deskPostId}`, 1 hour).
+- Redis stores the subreddit Review Desk pointer (`queuelens:desk:{subredditName}`) and short-lived per-analysis sessions (`queuelens:analysis:{analysisSessionId}`, about 1 hour). QueueLens does not store moderation history or persistent user profiles.
 - Raw context remains visible to the moderator.
 - Exact evidence validation remains strict.
 

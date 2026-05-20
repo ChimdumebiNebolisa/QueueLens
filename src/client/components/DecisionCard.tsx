@@ -2,6 +2,7 @@ import type { ValidatedAnalysisResult } from '../../shared/queueLensDomain.js';
 import { ConfidenceBadge } from './ConfidenceBadge.js';
 import { EvidencePanel } from './EvidencePanel.js';
 import { ModerationGuidance } from './ModerationGuidance.js';
+import { ReviewedTargetHeader } from './ReviewedTargetHeader.js';
 
 type Props = { result: ValidatedAnalysisResult };
 
@@ -11,6 +12,7 @@ export function DecisionCard({ result }: Props) {
   if (!ai) {
     return (
       <section className="card">
+        <ReviewedTargetHeader contextBundle={result.contextBundle} />
         <h2>QueueLens</h2>
         <p className="muted">{result.safeFallbackMessage ?? 'No AI summary available for this run.'}</p>
         <ModerationGuidance result={result} />
@@ -20,6 +22,7 @@ export function DecisionCard({ result }: Props) {
 
   return (
     <section className="card">
+      <ReviewedTargetHeader contextBundle={result.contextBundle} />
       <header className="card-header">
         <h2>Review brief</h2>
         <p className="disclaimer">

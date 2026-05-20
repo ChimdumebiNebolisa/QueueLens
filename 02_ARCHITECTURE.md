@@ -19,20 +19,22 @@ QueueLens does not run as a direct menu-action-to-card route. The implemented fl
 1. `devvit.json` exposes a moderator-only `Analyze with QueueLens` menu item for `post` and `comment`.
 2. The menu action calls `src/server/routes/menuAnalyze.ts`.
 3. `menuAnalyze.ts` validates menu input, infers target type, and resolves the subreddit Review Desk via `src/server/reviewDesk.ts` (`getOrCreateReviewDeskPost`, creating the desk with `reddit.submitCustomPost(...)` only when needed).
-4. `menuAnalyze.ts` stores a short-lived Redis handoff containing `targetType`, `targetId`, and `subredditName` at `queuelens:{deskPostId}`, with the desk registry at `queuelens:desk:{subredditName}`.
-5. The Review Desk custom post opens the `default` post entrypoint from `devvit.json`, which serves `src/client/splash.html`.
-6. `src/client/splash.tsx` mounts `src/client/App.tsx`.
-7. `App.tsx` calls `GET /api/analyze`.
-8. `src/server/routes/analyzeTarget.ts` reads the Redis session using the current post id from Devvit context.
-9. `src/server/analysis/pipeline.ts` orchestrates:
+4. `menuAnalyze.ts` creates a unique analysis session at `queuelens:analysis:{analysisSessionId}` containing `targetType`, `targetId`, `subredditName`, and `deskPostId`, with the desk registry at `queuelens:desk:{subredditName}`.
+5. `menuAnalyze.ts` stores the session id on the Review Desk custom post via **postData**, keyed by the current moderator user id (`storeAnalysisSessionBridgeOnReviewDeskPost` in `reviewDesk.ts`). Same-user rapid analyzes may overwrite that user's active pointer (acceptable for V1). This avoids cross-moderator last-write-wins on a shared desk key.
+6. The moderator is navigated to the Review Desk URL. `analysisSessionId` may appear in the query string for debugging, but live playtest showed the embedded Devvit webview often does not receive query params (see `VERIFICATION.md`).
+7. The Review Desk custom post opens the `default` post entrypoint from `devvit.json`, which serves `src/client/splash.html`.
+8. `src/client/splash.tsx` mounts `src/client/App.tsx`.
+9. `App.tsx` calls `GET /api/analyze?analysisSessionId=...` (session id from Review Desk postData for the current user; URL query and hash are fallback/debug only).
+10. `src/server/routes/analyzeTarget.ts` resolves the session id from Review Desk postData first, then query (same order as the client), loads the analysis session from Redis, and verifies it matches the current Review Desk post and subreddit when possible.
+11. `src/server/analysis/pipeline.ts` orchestrates:
    - `src/server/reddit/redditContext.ts`
    - `src/server/analysis/deterministicSignals.ts`
    - `src/server/analysis/aiPrompt.ts`
    - `src/server/analysis/aiAnalysis.ts`
    - `src/server/analysis/validateAnalysis.ts`
-10. The validated result is returned to the client.
-11. The client renders the decision card, evidence panel, deterministic signals, and raw context drawer.
-12. The moderator decides what to do. QueueLens does not enforce anything.
+12. The validated result is returned to the client.
+13. The client renders the decision card, evidence panel, deterministic signals, and raw context drawer.
+14. The moderator decides what to do. QueueLens does not enforce anything.
 
 ## Major system parts
 
@@ -71,7 +73,8 @@ Responsibilities:
 - accept only supported menu locations
 - validate expected post/comment thing id shape
 - get or create the QueueLens Review Desk for the subreddit
-- store only the minimal handoff payload needed for analysis on the desk post id
+- create a unique short-lived analysis session per Analyze action (not a shared desk-level handoff)
+- write the active session id to Review Desk postData keyed by moderator user id (primary session bridge)
 - return safe UI feedback if startup fails
 
 ### 3. Analysis route layer
@@ -89,9 +92,11 @@ Primary file:
 
 Responsibilities:
 
-- read the current custom post id from Devvit context
-- fetch the short-lived QueueLens session
-- reject missing or malformed session state safely
+- require `analysisSessionId` on `GET /api/analyze`
+- load the short-lived analysis session from `queuelens:analysis:{analysisSessionId}`
+- require Devvit `postId` and `subredditName` on the Review Desk webview (fail closed if missing)
+- verify the session matches the current Review Desk post and subreddit
+- reject missing, expired, or malformed session state safely (fail closed, no pipeline on unknown targets)
 - return the validated analysis result or a safe error
 
 ### 4. Reddit context collector

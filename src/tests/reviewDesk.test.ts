@@ -17,6 +17,7 @@ vi.mock('@devvit/web/server', () => ({
 }));
 
 import {
+  appendAnalysisSessionToReviewDeskUrl,
   deskPointerKey,
   getOrCreateReviewDeskPost,
   toAbsoluteRedditUrl,
@@ -44,6 +45,17 @@ describe('reviewDesk', () => {
     expect(
       toAbsoluteRedditUrl('https://www.reddit.com/r/queuelens_dev/comments/desk123/queuelens_review_desk/'),
     ).toBe('https://www.reddit.com/r/queuelens_dev/comments/desk123/queuelens_review_desk/');
+  });
+
+  it('appends analysisSessionId to Review Desk navigation URLs', () => {
+    expect(
+      appendAnalysisSessionToReviewDeskUrl(
+        'https://www.reddit.com/r/queuelens_dev/comments/desk123/queuelens_review_desk/',
+        'session-abc',
+      ),
+    ).toBe(
+      'https://www.reddit.com/r/queuelens_dev/comments/desk123/queuelens_review_desk/?analysisSessionId=session-abc',
+    );
   });
 
   it('creates a Review Desk post when no pointer exists', async () => {

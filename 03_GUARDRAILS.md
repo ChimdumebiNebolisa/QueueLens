@@ -109,9 +109,14 @@ This document defines what is forbidden, what must be proven, and how QueueLens 
 
 ## Redis rule
 
-- Redis may store only short-lived QueueLens session handoff data.
+- Redis may store only short-lived QueueLens analysis session handoff data and the subreddit Review Desk pointer (`queuelens:desk:{subredditName}`).
+- Per-analysis sessions use `queuelens:analysis:{analysisSessionId}` with a short TTL (about 1 hour). They are not moderation history.
+- The primary session bridge from menu action to Review Desk webview is Review Desk **postData** keyed by moderator user id, not URL query params. Query and hash are fallback/debug only (live playtest: top-level URL kept `?analysisSessionId=...` but the Devvit webview loaded `splash.html?token=...` without the session id).
+- Same-user rapid analyzes may overwrite that user's postData pointer; cross-moderator isolation is intentional for V1.
+- The legacy shared key `queuelens:{deskPostId}` is not written by the active menu flow; it is read only by recursive-analysis guards for older installs.
+- `GET /api/analyze` must fail closed without `analysisSessionId`, without a valid session, or without Devvit Review Desk context (`postId`, `subredditName`).
 - Redis must not become user profiling, history storage, moderation memory, or product persistence.
-- Redis is allowed only to bridge menu action state into the QueueLens custom post flow.
+- Redis is allowed only to bridge menu action state into the QueueLens Review Desk flow; postData bridges the webview session id.
 
 ## Devvit-specific rules
 

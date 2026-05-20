@@ -4,41 +4,61 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
 
 ## Final verification snapshot
 
-- Date: `2026-05-19` (Review Desk switch validation)
+- Date: `2026-05-19` (Review Desk postData session bridge, manual smoke test **live pass**)
 - Playtest subreddit: `r/queuelens_dev`
 - Playtest URL: `https://www.reddit.com/r/queuelens_dev/?playtest=queuelens`
-- Live E2E in this pass: **not completed** (see Review Desk live E2E below)
-- Automated checks in this pass: `npm run typecheck`, `npm test` (51 tests), `npm run build` all **pass**
-- Dev server: `npm run dev` started but did not reach `Playtest ready` in the agent environment within ~2 minutes (likely blocked on Devvit CLI auth or an existing playtest session)
-- Reddit fetch attempt: `GET` playtest URL returned **403 Forbidden** without a signed-in moderator session
-- Browser path: no Cursor IDE Browser MCP in this workspace; prior live artifacts remain under `manual-artifacts\queuelens-live-2026-05-19\` (per-analyze post model)
+- Review Desk URL shape: `https://www.reddit.com/r/queuelens_dev/comments/<deskId>/queuelens_review_desk/` (optional `?analysisSessionId=<uuid>` for debug; not relied on live)
+- `analysisSessionId` behavior: created per Analyze in Redis at `queuelens:analysis:{analysisSessionId}`; **primary bridge** is Review Desk postData keyed by moderator user id (`reddit.mergePostData`); client and `GET /api/analyze` resolve postData first, then URL query, then hash (fallback/debug only)
+- Live query-param failure (recorded): top-level Reddit URL preserved `?analysisSessionId=...`, but the embedded Devvit webview loaded `splash.html?token=...` without the session id and failed closed. postData bridge is the fix; do not treat query params as the primary mechanism.
+- postData bridge live smoke test: **live pass** (signed-in moderator, manual). Fixture: ambiguous civility post `t3_1ti3shk`. Review card loaded; no missing-session error; no new `queuelens_analysis` post. Prior agent playwright failure was unsigned-in browser / private subreddit, not an app regression.
+- Live E2E Cases 1-5 (full fixture matrix): **pending** (smoke test does not replace Cases 1-5)
+- Automated checks before commit: `npm run typecheck`, `npm test`, `npm run build`
 
-## Files changed (Review Desk switch)
+## Worker 2 audit reconciliation (repo vs checklist)
 
-- `src/server/reviewDesk.ts` (get or create Review Desk, desk pointer `queuelens:desk:{subredditName}`, stale recovery)
-- `src/server/routes/menuAnalyze.ts` (navigate to Review Desk; handoff `queuelens:{deskPostId}`, TTL 3600)
-- `src/server/queueLensMenuGuards.ts` (block Review Desk and legacy analysis posts)
-- `src/tests/reviewDesk.test.ts`, `src/tests/menuAnalyze.test.ts`, `src/tests/queueLensMenuGuards.test.ts`
+| Check | Status | Evidence |
+| --- | --- | --- |
+| `menuAnalyze.test.ts` does not assert `queuelens:{deskPostId}` handoff | **pass** | Asserts `not.toHaveBeenCalledWith('queuelens:t3_desk', ...)`; sessions use `queuelens:analysis:*` |
+| `analyzeTarget.test.ts` covers missing / expired / mismatch / happy path | **pass** | 7 tests: no param, missing context, missing session, legacy key not read, desk mismatch, two sessions, comment pipeline |
+| Docs mention `queuelens:analysis:{sessionId}` | **pass** | `README.md`, `02_ARCHITECTURE.md`, `03_GUARDRAILS.md`, this file |
+| Docs do not describe shared desk handoff as active flow | **pass** | Architecture describes per-analysis sessions; legacy desk key only in guard/tests |
+| `/api/analyze` fails closed without `analysisSessionId` | **pass** | 400 + `MISSING_ANALYSIS_SESSION_ERROR` |
+| `/api/analyze` fails closed when session missing/expired | **pass** | 404 + same error; malformed payload treated as missing |
+| `/api/analyze` validates `deskPostId` and `subredditName` | **pass** | 400 on mismatch; requires Devvit `postId` and `subredditName` (fail closed if absent) |
+| Missing Devvit `postId` / `subredditName` | **fail closed** | No test proving Devvit omits these on valid playtest webview; aligned with `/api/init` pattern |
+
+## Files changed (Review Desk postData session bridge)
+
+- `src/server/analysisSession.ts` (create/read/validate `queuelens:analysis:{analysisSessionId}`, TTL 3600)
+- `src/server/reviewDesk.ts` (`storeAnalysisSessionBridgeOnReviewDeskPost`; optional query on navigate URL for debug)
+- `src/server/routes/menuAnalyze.ts` (unique session per Analyze; merge postData bridge; navigate to Review Desk)
+- `src/server/routes/analyzeTarget.ts` (resolve `analysisSessionId` from postData then query; fail closed; require Review Desk context)
+- `src/client/analysisSession.ts`, `src/client/api.ts` (resolve session id from postData then URL; pass to API)
+- `src/shared/analysisSession.ts` (postData bridge helpers; query/hash fallback)
+- `src/tests/analysisSession.test.ts`, `src/tests/analyzeTarget.test.ts`, `src/tests/clientAnalysisSession.test.ts`
+- `src/tests/menuAnalyze.test.ts`, `src/tests/reviewDesk.test.ts`
 - `devvit.json` (post menu description for Review Desk)
-- `README.md`, `02_ARCHITECTURE.md`, `VERIFICATION.md`
+- `README.md`, `02_ARCHITECTURE.md`, `03_GUARDRAILS.md`, `VERIFICATION.md`
 
 ## Commands run (Review Desk pass)
 
 - `npm run typecheck`: passed
-- `npm test`: passed (51 tests, 10 files)
+- `npm test`: passed (71 tests, 13 files)
 - `npm run build`: passed
-- `npm run dev`: started; playtest URL not confirmed ready in agent session
+- `npm run dev`: existing session at `v0.0.1.61`; duplicate start failed `EADDRINUSE :5678`
 - `git status --short`
 
 ## Review Desk live E2E (Cases 1-5, this pass)
 
-| Case | Fixture / focus | Review Desk navigation | Status (this pass) |
-| --- | --- | --- | --- |
-| 1 | Bare-domain spam | Expected: same subreddit **QueueLens Review Desk** post, not a new `queuelens_analysis` post | **not live-verified** (prior pass on legacy model; see matrix below) |
-| 2 | Comment target | Expected: Review Desk opens with comment target in handoff | **not live-verified** |
-| 3 | Fake personal-info | Expected: Review Desk + redaction behavior | **not live-verified** (prior fixture URLs still valid for manual rerun) |
-| 4 | Ambiguous civility | Expected: cautious outcome on Review Desk | **not live-verified** |
-| 5 | Recursive guard on Review Desk | Menu visible OK; toast blocks; no new desk/handoff | **not live-verified** (handler + unit tests **pass**) |
+| Case | Fixture / focus | `analysisSessionId` in URL | Correct target in card | No new `queuelens_analysis` post | Status (this pass) |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Bare-domain spam | not verified | not verified | not verified | **not live-verified** |
+| 2 | Comment target | not verified | not verified | not verified | **not live-verified** |
+| 3 | Fake personal-info | not verified | not verified | not verified | **not live-verified** |
+| 4 | Ambiguous civility | not verified | not verified | not verified | **not live-verified** |
+| 5 | Recursive guard on Review Desk | n/a (blocked) | n/a | no new session/post expected | **not live-verified** (handler + unit tests **pass**) |
+
+Screenshot paths (this pass): **none** (live E2E not run).
 
 ### Manual steps to complete live Review Desk E2E
 
@@ -184,18 +204,22 @@ After manual rerun, record the Review Desk permalink (for example `/r/queuelens_
 - **Em dash cleanup**: user-facing strings in `src/`, fixtures, and this doc use colons, commas, or hyphens instead of U+2014.
 - **Automated coverage**: `src/tests/moderationGuidance.test.ts` (bare-domain spam, personal-info, ambiguous civility, partial validation warnings).
 
-## Local automated verification (Review Desk pass)
+## Local automated verification (postData bridge docs pass)
 
 - `npm run typecheck`: passed
-- `npm test`: passed (51 tests: `reviewDesk.test.ts` 6, `menuAnalyze.test.ts` 6, `queueLensMenuGuards.test.ts` 7, plus existing suites)
+- `npm test`: passed (73 tests, 13 files; includes `analyzeTarget.test.ts` 8, `menuAnalyze.test.ts` 8, `analysisSession.test.ts` 7, `clientAnalysisSession.test.ts` 4)
 - `npm run build`: passed
+- `git status --short`: docs + postData bridge source (see working tree)
 
 ## Review Desk switch (2026-05-19)
 
-- Code: one reusable **QueueLens Review Desk** custom post per subreddit; handoff at `queuelens:{deskPostId}` (1h TTL); registry at `queuelens:desk:{subredditName}`
-- `menuAnalyze` navigates to `toAbsoluteRedditUrl(desk.permalink)` after `redis.set` / `redis.expire`; does not call `submitCustomPost` per analyze
+- Code: one reusable **QueueLens Review Desk** custom post per subreddit; per-analysis sessions at `queuelens:analysis:{analysisSessionId}` (about 1h TTL); registry at `queuelens:desk:{subredditName}`
+- **Primary session bridge**: Review Desk postData keyed by moderator user id (`mergePostData` on analyze; client and API read postData first). Avoids cross-moderator last-write-wins. Same-user rapid analyzes may overwrite that user's pointer (acceptable for V1).
+- `menuAnalyze` may append `?analysisSessionId=...` to the navigate URL for debugging only; does not write a shared `queuelens:{deskPostId}` handoff
+- Opening Review Desk without a resolvable session id fails closed with a clear message (no pipeline on unknown targets)
+- URL fallbacks: client and server also accept query and hash `analysisSessionId` (debug/fallback; query path **failed live** when used as primary)
 - Stale pointer: if `queuelens:desk:{subreddit}` points at a missing or wrong-shape post, desk is recreated and pointer updated
-- Live E2E Cases 1-5 on Review Desk navigation: **not live-verified** in agent pass; automated coverage **pass**
+- Live E2E Cases 1-5 on Review Desk navigation: **not live-verified** in full matrix; postData smoke test tracked separately below
 
 ## Bugs found
 
@@ -210,22 +234,52 @@ After manual rerun, record the Review Desk permalink (for example `/r/queuelens_
 - Clarified post menu description and recursive-analysis toast text (handler guard unchanged; no fake disabled state)
 - Documented that Devvit does not support permanent per-target menu disabling in this repo
 
+## Session bridge decision record (query vs postData)
+
+- **Query param as primary**: **failed live**. Browser address bar kept `?analysisSessionId=<uuid>` after menu navigation, but the Devvit webview request was `splash.html?token=...` without the session id; Review Desk failed closed.
+- **postData bridge (primary)**: `menuAnalyze` writes `{ [userId]: { analysisSessionId, createdAt } }` on the Review Desk post; client (`getAnalysisSessionIdFromWindow`) and `analyzeTarget` read postData before query/hash.
+- **Query/hash (fallback/debug only)**: still implemented in `src/shared/analysisSession.ts` and covered by unit tests; not relied on for production navigation.
+- **Rejected**: shared `queuelens:{deskPostId}` Redis handoff (cross-moderator last-write-wins).
+
+## postData bridge live smoke test
+
+Run once as a signed-in moderator on `r/queuelens_dev` with playtest enabled:
+
+1. `npm run dev` until **Playtest ready**.
+2. Open `https://www.reddit.com/r/queuelens_dev/?playtest=queuelens`.
+3. Analyze one normal fixture post via post menu **Analyze with QueueLens**.
+4. Confirm navigation lands on **QueueLens Review Desk** (not a new `queuelens_analysis` post).
+5. Confirm the review card loads (not "No active QueueLens review session").
+6. Open raw context; confirm `targetId` matches the analyzed fixture post.
+7. Record result below.
+
+| Check | Expected | Result |
+| --- | --- | --- |
+| Review Desk loads review card | card visible | **live pass** |
+| Raw context `targetId` | matches analyzed post | **live pass** (`t3_1ti3shk`) |
+| No new `queuelens_analysis` post | reuse Review Desk only | **live pass** |
+
+Manual smoke test (`2026-05-19`, signed-in mod): **Analyze with QueueLens** navigated to **QueueLens Review Desk**; review card rendered without missing-session error. Raw context showed `targetId: t3_1ti3shk` (ambiguous civility fixture). No new `queuelens_analysis` post appeared.
+
+Agent playwright attempt (same day, earlier): **blocked** (not signed in; private subreddit). That failure did not reproduce the app bug; embedded Devvit webview content is not visible to unsigned automation.
+
 ## Submission readiness
 
 - QueueLens is **not fully submission-ready** until Review Desk live E2E (Cases 1-5) is completed by a signed-in moderator.
+- postData session bridge: **live pass** (manual smoke test); full Cases 1-5 matrix still **pending**.
 - Ready now:
   - Review Desk server flow and guards: **pass** (typecheck, 51 tests, build)
   - Prior live behavior for analysis content (Cases 1-4) on legacy `queuelens_analysis` posts: **pass** with documented caveats
   - Case 5 handler + tests on Review Desk and legacy shapes: **pass**
 - Blockers for submission sign-off:
-  - No live evidence that **Analyze with QueueLens** navigates to **QueueLens Review Desk** (not per-analyze posts) after this switch
+  - Full Cases 1-5 live matrix on Review Desk not completed (postData smoke test passed on ambiguous civility fixture only)
   - Case 5 live toast on Review Desk not captured in this pass
   - Devvit menu item remains visible on Review Desk until platform supports per-target hide
 
 ## What remains
 
-1. Run the manual Review Desk E2E steps above; update this file with Review Desk permalink and per-case `live pass` / `fail`.
-2. Optionally re-capture Case 4 raw-context drawer open state on the Review Desk.
-3. Optionally capture Case 5 live toast on the Review Desk post.
-4. Remove the NSFW tag from the Case 3 fixture if still present.
-5. If Reddit/Devvit add per-target menu hide or `disabled`, apply to Review Desk and legacy analysis posts.
+1. Run the manual Review Desk E2E steps above for Cases 1-5; update this file with Review Desk permalink and per-case `live pass` / `fail`.
+3. Optionally re-capture Case 4 raw-context drawer open state on the Review Desk.
+4. Optionally capture Case 5 live toast on the Review Desk post.
+5. Remove the NSFW tag from the Case 3 fixture if still present.
+6. If Reddit/Devvit add per-target menu hide or `disabled`, apply to Review Desk and legacy analysis posts.

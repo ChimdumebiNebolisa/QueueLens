@@ -1,4 +1,5 @@
 import { reddit, redis } from '@devvit/web/server';
+import { ANALYSIS_SESSION_QUERY_PARAM } from './analysisSession.js';
 import {
   isQueueLensReviewDeskPostShape,
   QUEUE_LENS_REVIEW_DESK_TITLE,
@@ -10,6 +11,11 @@ export type ReviewDeskPost = {
   url?: string;
 };
 
+export type ReviewDeskSessionBridgeEntry = {
+  analysisSessionId: string;
+  createdAt: string;
+};
+
 export function deskPointerKey(subredditName: string): string {
   return `queuelens:desk:${subredditName}`;
 }
@@ -19,6 +25,26 @@ export function toAbsoluteRedditUrl(permalink: string): string {
     return permalink;
   }
   return `https://www.reddit.com${permalink.startsWith('/') ? permalink : `/${permalink}`}`;
+}
+
+/** Appends the per-analysis session id to the Review Desk navigation URL. */
+export function appendAnalysisSessionToReviewDeskUrl(
+  reviewDeskUrl: string,
+  analysisSessionId: string,
+): string {
+  const url = new URL(reviewDeskUrl);
+  url.searchParams.set(ANALYSIS_SESSION_QUERY_PARAM, analysisSessionId);
+  return url.toString();
+}
+
+export async function storeAnalysisSessionBridgeOnReviewDeskPost(
+  reviewDeskPostId: string,
+  bridgeKey: string,
+  bridgeEntry: ReviewDeskSessionBridgeEntry,
+): Promise<void> {
+  await reddit.mergePostData(reviewDeskPostId as `t3_${string}`, {
+    [bridgeKey]: bridgeEntry,
+  });
 }
 
 async function createReviewDeskPost(subredditName: string): Promise<ReviewDeskPost> {

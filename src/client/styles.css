@@ -55,6 +55,45 @@ h1 {
   color: #475569;
 }
 
+.reviewed-target {
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.reviewed-target-kind {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.reviewed-target-headline {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.reviewed-target-meta {
+  margin: 0;
+}
+
+.reviewed-target-link {
+  margin: 6px 0 0;
+}
+
+.reviewed-target-link a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.reviewed-target-link a:hover {
+  text-decoration: underline;
+}
+
 .summary {
   margin: 0 0 12px;
 }

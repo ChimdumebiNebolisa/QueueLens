@@ -8,7 +8,10 @@ declare module 'hono' {
   }
 
   export type HonoContext = {
-    req: { json: <T = unknown>() => Promise<T> };
+    req: {
+      json: <T = unknown>() => Promise<T>;
+      query: (key: string) => string | undefined;
+    };
     json: <T>(body: T, status?: number) => Response;
   };
 }

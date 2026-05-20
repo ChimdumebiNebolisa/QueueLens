@@ -1,11 +1,17 @@
 import { Hono } from 'hono';
-import { context, redis } from '@devvit/web/server';
+import { context } from '@devvit/web/server';
 import type { MenuItemRequest, UiResponse } from '@devvit/web/shared';
+import { createAnalysisSession } from '../analysisSession.js';
 import {
   isQueueLensAnalysisPostTarget,
   QUEUE_LENS_RECURSIVE_ANALYSIS_TOAST,
 } from '../queueLensMenuGuards.js';
-import { getOrCreateReviewDeskPost, toAbsoluteRedditUrl } from '../reviewDesk.js';
+import {
+  appendAnalysisSessionToReviewDeskUrl,
+  getOrCreateReviewDeskPost,
+  storeAnalysisSessionBridgeOnReviewDeskPost,
+  toAbsoluteRedditUrl,
+} from '../reviewDesk.js';
 
 export const menuAnalyze = new Hono();
 
@@ -38,6 +44,12 @@ menuAnalyze.post('/analyze-with-queuelens', async (c) => {
 
   const { subredditName } = context;
   const contextRecord = context as Record<string, unknown>;
+  const currentUserId =
+    typeof contextRecord.userId === 'string'
+      ? contextRecord.userId
+      : typeof contextRecord.username === 'string'
+        ? contextRecord.username
+        : null;
   const currentUsername =
     typeof contextRecord.username === 'string'
       ? contextRecord.username
@@ -57,6 +69,7 @@ menuAnalyze.post('/analyze-with-queuelens', async (c) => {
       location: input.location,
       targetId: input.targetId,
       subredditName,
+        currentUserId,
       currentUsername,
       modStatus,
     }),
@@ -114,30 +127,38 @@ menuAnalyze.post('/analyze-with-queuelens', async (c) => {
 
     const desk = await getOrCreateReviewDeskPost(subredditName);
     const reviewDeskUrl = toAbsoluteRedditUrl(desk.permalink);
+    const bridgeKey = currentUserId ?? currentUsername;
+    if (!bridgeKey) {
+      throw new Error('QueueLens missing current user context for Review Desk bridge.');
+    }
 
-    console.log(
-      'QueueLens menu review desk resolved',
-      JSON.stringify({
-        deskPostId: desk.id,
-        reviewDeskUrl,
-        deskPermalink: desk.permalink,
-        deskRawPostUrl: desk.url,
-      }),
-    );
+    const createdAt = new Date().toISOString();
 
-    const payload = JSON.stringify({
+    const analysisSessionId = await createAnalysisSession({
       targetType,
       targetId,
       subredditName,
-    } satisfies { targetType: 'post' | 'comment'; targetId: string; subredditName: string });
+      deskPostId: desk.id,
+      createdAt,
+    });
 
-    const key = `queuelens:${desk.id}`;
-    await redis.set(key, payload);
-    await redis.expire(key, 3600);
+    await storeAnalysisSessionBridgeOnReviewDeskPost(desk.id, bridgeKey, {
+      analysisSessionId,
+      createdAt,
+    });
+
+    const navigateTo = appendAnalysisSessionToReviewDeskUrl(reviewDeskUrl, analysisSessionId);
 
     console.log(
-      'QueueLens menu session stored',
-      JSON.stringify({ key, targetId, targetType, subredditName }),
+      'QueueLens menu analysis session stored',
+      JSON.stringify({
+        analysisSessionId,
+        deskPostId: desk.id,
+        reviewDeskUrl: navigateTo,
+        targetId,
+        targetType,
+        subredditName,
+      }),
     );
 
     return c.json<UiResponse>({
@@ -145,7 +166,7 @@ menuAnalyze.post('/analyze-with-queuelens', async (c) => {
         text: 'Opening QueueLens...',
         appearance: 'success',
       },
-      navigateTo: reviewDeskUrl,
+      navigateTo,
     });
   } catch (e) {
     console.error(

@@ -1,35 +1,55 @@
 import { Hono } from 'hono';
-import { context, redis } from '@devvit/web/server';
-import type { GatherSession } from '../reddit/redditContext.js';
+import { context } from '@devvit/web/server';
+import { getAnalysisSessionIdFromReviewDeskPostData } from '../../shared/analysisSession.js';
+import { readAnalysisSession, toGatherSession } from '../analysisSession.js';
 import { executeQueueLensPipeline } from '../analysis/pipeline.js';
 
 export const analyzeTarget = new Hono();
 
+export const MISSING_ANALYSIS_SESSION_ERROR =
+  'No active QueueLens review session. Use Analyze with QueueLens from a post or comment.';
+
+export const MISSING_REVIEW_DESK_CONTEXT_ERROR =
+  'QueueLens could not verify the Review Desk context. Re-open from Analyze with QueueLens.';
+
 analyzeTarget.get('/analyze', async (c) => {
-  const { postId } = context;
-  if (!postId) {
-    return c.json({ error: 'Missing post context.' }, 400);
+  const contextRecord = context as Record<string, unknown>;
+  const analysisSessionId =
+    getAnalysisSessionIdFromReviewDeskPostData(
+      contextRecord.postData,
+      typeof contextRecord.userId === 'string'
+        ? contextRecord.userId
+        : typeof contextRecord.username === 'string'
+          ? contextRecord.username
+          : null,
+    ) ?? c.req.query('analysisSessionId')?.trim();
+  if (!analysisSessionId) {
+    return c.json({ error: MISSING_ANALYSIS_SESSION_ERROR }, 400);
   }
 
-  const rawSession = await redis.get(`queuelens:${postId}`);
-  if (!rawSession) {
-    return c.json(
-      {
-        error: 'No QueueLens session for this post. Use “Analyze with QueueLens” from a post or comment menu.',
-      },
-      404,
+  const { postId, subredditName } = context;
+  if (!postId || !subredditName) {
+    console.error(
+      'QueueLens analyze missing devvit context',
+      JSON.stringify({ postId: postId ?? null, subredditName: subredditName ?? null }),
     );
+    return c.json({ error: MISSING_REVIEW_DESK_CONTEXT_ERROR }, 400);
   }
 
-  let session: GatherSession;
-  try {
-    session = JSON.parse(rawSession) as GatherSession;
-  } catch {
-    return c.json({ error: 'Invalid session payload.' }, 400);
+  const session = await readAnalysisSession(analysisSessionId);
+  if (!session) {
+    return c.json({ error: MISSING_ANALYSIS_SESSION_ERROR }, 404);
+  }
+
+  if (session.deskPostId !== postId) {
+    return c.json({ error: 'Analysis session does not match this Review Desk post.' }, 400);
+  }
+  if (session.subredditName !== subredditName) {
+    return c.json({ error: 'Analysis session does not match this subreddit.' }, 400);
   }
 
   try {
-    const result = await executeQueueLensPipeline(session);
+    const result = await executeQueueLensPipeline(toGatherSession(session));
     return c.json(result);
   } catch (e) {
     console.error('QueueLens analyze error', e instanceof Error ? e.message : e);
