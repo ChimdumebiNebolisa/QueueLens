@@ -6,12 +6,20 @@ import {
   MODERATION_GUIDANCE_UI_LABELS,
 } from '../../shared/moderationGuidance.js';
 
+const CAUTION_VISIBLE_DEFAULT = 3;
+
 type Props = { result: ValidatedAnalysisResult };
 
 export function ModerationGuidance({ result }: Props) {
   const cautionReasons = deriveCautionReasons(result);
   const moderatorNote = deriveSuggestedModeratorNote(result);
   const [copied, setCopied] = useState(false);
+  const [showAllCaution, setShowAllCaution] = useState(false);
+
+  const visibleCautionReasons = showAllCaution
+    ? cautionReasons
+    : cautionReasons.slice(0, CAUTION_VISIBLE_DEFAULT);
+  const hasMoreCaution = cautionReasons.length > CAUTION_VISIBLE_DEFAULT;
 
   async function copyNote(note: string) {
     await navigator.clipboard.writeText(note);
@@ -25,10 +33,19 @@ export function ModerationGuidance({ result }: Props) {
         <div className="caution">
           <span className="label">{MODERATION_GUIDANCE_UI_LABELS.cautionHeading}</span>
           <ul className="caution-list">
-            {cautionReasons.map((reason) => (
+            {visibleCautionReasons.map((reason) => (
               <li key={reason}>{reason}</li>
             ))}
           </ul>
+          {hasMoreCaution ? (
+            <button
+              type="button"
+              className="buttonish secondary caution-toggle"
+              onClick={() => setShowAllCaution((open) => !open)}
+            >
+              {showAllCaution ? 'Show less' : 'Show more'}
+            </button>
+          ) : null}
         </div>
       )}
 

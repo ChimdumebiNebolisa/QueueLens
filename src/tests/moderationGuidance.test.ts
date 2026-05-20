@@ -33,6 +33,10 @@ const KEY_USER_FACING_STRINGS = [
   'Evidence (exact snippets)',
   'Gathering context and running analysis…',
   'Final moderation decisions remain with you. QueueLens does not remove, ban, message users, or change Reddit state.',
+  'Review details',
+  'What QueueLens checked before producing this brief.',
+  'Show more',
+  'Show less',
 ];
 
 function loadFixture(name: string): ContextBundle {
@@ -229,6 +233,10 @@ describe('moderationGuidance', () => {
       join(here, '..', 'client', 'components', 'StatePanel.tsx'),
       join(here, '..', 'client', 'components', 'DecisionCard.tsx'),
       join(here, '..', 'client', 'components', 'EvidencePanel.tsx'),
+      join(here, '..', 'client', 'components', 'CollapsibleSection.tsx'),
+      join(here, '..', 'client', 'components', 'InvestigationTracePanel.tsx'),
+      join(here, '..', 'client', 'components', 'ContextSnapshotPanel.tsx'),
+      join(here, '..', 'client', 'components', 'SignalList.tsx'),
       join(here, '..', 'shared', 'moderationGuidance.ts'),
     ];
 

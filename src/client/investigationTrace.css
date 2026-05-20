@@ -1,8 +1,11 @@
 .investigation-trace {
-  border: 1px solid var(--border, #2a2f3a);
-  border-radius: 8px;
-  padding: 1rem;
-  margin-top: 1rem;
+  margin-top: 0;
+  padding-top: 4px;
+}
+
+.investigation-trace-head {
+  justify-content: flex-end;
+  margin-bottom: 0;
 }
 
 .investigation-trace-badge {

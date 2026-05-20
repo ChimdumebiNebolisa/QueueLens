@@ -17,13 +17,12 @@ function statusLabel(status: InvestigationTraceStepStatus): string {
 
 export function InvestigationTracePanel({ trace }: Props) {
   if (!trace) {
-    return null;
+    return <p className="muted small">No investigation trace recorded for this run.</p>;
   }
 
   return (
-    <section className="panel investigation-trace" aria-label="Investigation trace">
-      <div className="section-head">
-        <h3>Investigation trace</h3>
+    <div className="investigation-trace" aria-label="Investigation trace">
+      <div className="section-head investigation-trace-head">
         <span className="badge investigation-trace-badge">advisory</span>
       </div>
       <p className="investigation-trace-advisory muted small">{INVESTIGATION_TRACE_ADVISORY}</p>
@@ -47,6 +46,6 @@ export function InvestigationTracePanel({ trace }: Props) {
           </li>
         ))}
       </ol>
-    </section>
+    </div>
   );
 }

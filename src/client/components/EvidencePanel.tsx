@@ -20,7 +20,7 @@ function sourceLabel(source: EvidenceItem['source']): string {
 export function EvidencePanel({ items, fallbackUsed = false }: Props) {
   if (!items.length) {
     return (
-      <section className="panel evidence-panel">
+      <section className="subsection evidence-panel">
         <div className="section-head">
           <h3>Evidence</h3>
           {fallbackUsed && <span className="badge">fallback used</span>}
@@ -30,7 +30,7 @@ export function EvidencePanel({ items, fallbackUsed = false }: Props) {
     );
   }
   return (
-    <section className="panel evidence-panel">
+    <section className="subsection evidence-panel">
       <div className="section-head">
         <h3>Evidence (exact snippets)</h3>
         {fallbackUsed && <span className="badge">fallback used</span>}
