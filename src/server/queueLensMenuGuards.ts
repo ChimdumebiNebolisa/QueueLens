@@ -4,7 +4,7 @@ export const QUEUE_LENS_ANALYSIS_POST_TITLE = 'QueueLens analysis';
 
 /** Shown when a moderator invokes Analyze on a QueueLens-generated analysis post. */
 export const QUEUE_LENS_RECURSIVE_ANALYSIS_TOAST =
-  'QueueLens analysis posts cannot be analyzed.';
+  'QueueLens cannot analyze QueueLens analysis posts.';
 
 export function isQueueLensAnalysisPostShape(post: {
   title?: string | null;

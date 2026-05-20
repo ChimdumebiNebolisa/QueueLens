@@ -81,7 +81,7 @@ describe('queueLensMenuGuards', () => {
 
   it('exports the recursive-analysis toast message', () => {
     expect(QUEUE_LENS_RECURSIVE_ANALYSIS_TOAST).toBe(
-      'QueueLens analysis posts cannot be analyzed.',
+      'QueueLens cannot analyze QueueLens analysis posts.',
     );
   });
 });

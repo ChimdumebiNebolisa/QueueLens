@@ -100,7 +100,7 @@ describe('menuAnalyze', () => {
     await expect(response.json()).resolves.toEqual({
       showToast: {
         appearance: 'neutral',
-        text: 'QueueLens analysis posts cannot be analyzed.',
+        text: 'QueueLens cannot analyze QueueLens analysis posts.',
       },
     });
     expect(mocks.redis.get).toHaveBeenCalledWith('queuelens:t3_analysis');
@@ -133,7 +133,7 @@ describe('menuAnalyze', () => {
     await expect(response.json()).resolves.toEqual({
       showToast: {
         appearance: 'neutral',
-        text: 'QueueLens analysis posts cannot be analyzed.',
+        text: 'QueueLens cannot analyze QueueLens analysis posts.',
       },
     });
     expect(mocks.reddit.getPostById).not.toHaveBeenCalled();

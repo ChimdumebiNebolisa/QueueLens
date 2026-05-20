@@ -12,11 +12,10 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
 
 ## Files changed
 
-- `src/server/queueLensMenuGuards.ts` (new — recursive-analysis detection + toast constant)
-- `src/server/routes/menuAnalyze.ts` (guard runs before `submitCustomPost`; explicit toast response)
-- `devvit.json` (documented `postFilter: "none"`; menu description notes analysis-post limitation)
-- `src/tests/queueLensMenuGuards.test.ts` (new)
-- `src/tests/menuAnalyze.test.ts` (redis-session block test)
+- `src/server/queueLensMenuGuards.ts` (recursive-analysis toast text)
+- `devvit.json` (post menu description warns analysis posts are unsupported)
+- `src/tests/queueLensMenuGuards.test.ts` (toast constant assertion)
+- `src/tests/menuAnalyze.test.ts` (toast assertion)
 - `VERIFICATION.md` (this update)
 
 ## Commands run
@@ -116,19 +115,21 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
 
 ### Case 5: recursive-analysis guardrail
 
-- Status: `pass` (handler + tests); menu visibility `not supported by Devvit`
+- Status: `pass` (handler + tests); permanent per-target menu disable `not supported by Devvit`
 - Analysis post used in prior live retry: `https://www.reddit.com/r/queuelens_dev/comments/1ti44ff/queuelens_analysis/`
-- Menu visibility (Devvit platform):
-  - Devvit menu items in `devvit.json` are static; Reddit docs state context/name/description do not support dynamic logic
-  - Optional `postFilter: "currentApp"` shows the item **only** on custom posts created by this app — the inverse of what QueueLens needs, so it was **not** used
-  - `postFilter: "none"` is set explicitly on the post menu item; **Analyze with QueueLens** remains visible on analysis posts until Reddit adds per-target hiding
-- Handler guard (this change):
+- Menu visibility (Devvit platform — re-checked in repo):
+  - `devvit.json` schema (`@devvit/shared-types/schemas/config-file.v1.json`) allows only: `label`, `description`, `forUserType`, `location`, `endpoint`, `postFilter` (`none` | `currentApp`)
+  - No `disabled`, `enabled`, `commentFilter`, or dynamic per-post predicates in this repo’s Devvit packages
+  - Reddit may briefly grey the item client-side, but reopening the menu shows it clickable again; there is no supported permanent disabled state for specific posts
+  - `postFilter: "currentApp"` would show the item **only** on this app’s custom posts (inverse of QueueLens needs), so it was **not** used
+  - Post menu description (static): `Open a QueueLens review card. Not available on QueueLens analysis posts.`
+- Handler guard (authoritative):
   - Detection runs **before** `submitCustomPost` via `isQueueLensAnalysisPostTarget()` in `src/server/queueLensMenuGuards.ts`
   - Primary signal: existing Redis session key `queuelens:{postId}` on the analysis post
   - Fallback: post title `QueueLens analysis` plus `queuelens` author or `/queuelens_analysis/` permalink
-  - Response: `showToast` with exact text `QueueLens analysis posts cannot be analyzed.` (`appearance: neutral`); no `navigateTo`; no new session write
+  - Response: `showToast` with exact text `QueueLens cannot analyze QueueLens analysis posts.` (`appearance: neutral`); no `navigateTo`; no `submitCustomPost`; no `redis.set` / `redis.expire`
 - Live UI (prior pass, unchanged):
-  - Menu item still visible on analysis posts (platform limitation)
+  - Menu item still visible and may appear briefly disabled, then clickable again on reopen (platform limitation; not faked in app code)
   - Click did not create a new analysis post (URL stayed on `1ti44ff`)
   - Toast text was not screenshot-captured in browser automation
 - Automated coverage: `pass`
@@ -138,9 +139,10 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
 
 ## Recursive-analysis guardrail
 
-- Menu hide on analysis posts: **not supported** (Devvit static menu config only)
-- Handler block + toast: **pass** (strengthened detection + tests)
-- Live UI: menu item still visible; prior live run showed in-place block without new post
+- Permanent per-target disabled menu state: **not supported** (confirmed from repo schema; no `disabled` / dynamic predicates)
+- Static menu warning: post item description states analysis posts are not available
+- Handler block + toast: **pass** (authoritative; toast `QueueLens cannot analyze QueueLens analysis posts.`)
+- Live UI: menu item remains visible; brief client greying is not a reliable disable
 
 ## Local automated verification (this continuation pass)
 
@@ -157,9 +159,8 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
 
 ## Fixes made
 
-- Strengthened recursive-analysis detection (Redis session key + metadata fallback) and centralized guard/toast constant
-- Documented Devvit menu limitation in `devvit.json` description and this file
-- Added unit tests for guard paths (no `submitCustomPost` / no new session on blocked targets)
+- Clarified post menu description and recursive-analysis toast text (handler guard unchanged; no fake disabled state)
+- Documented that Devvit does not support permanent per-target menu disabling in this repo
 
 ## Submission readiness
 
@@ -175,4 +176,4 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
 1. Optionally obtain a manual click-through screenshot of the Case 4 raw-context drawer in its open state on `1ti44ff`.
 2. Optionally capture the Case 5 live toast screenshot on an analysis post (handler text is fixed in code/tests).
 3. Remove the NSFW tag from the Case 3 fixture if it is still present for clean demos.
-4. If Reddit/Devvit add dynamic menu visibility, hide **Analyze with QueueLens** on posts with an active `queuelens:{postId}` session or `QueueLens analysis` title.
+4. If Reddit/Devvit add per-target menu `disabled` or hide predicates, apply them to QueueLens analysis posts; until then rely on handler guard + menu description + toast.
