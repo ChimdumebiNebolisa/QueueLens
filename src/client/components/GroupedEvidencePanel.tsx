@@ -21,7 +21,11 @@ export function GroupedEvidencePanel({ result, fallbackUsed = false }: Props) {
             <div key={group.concernId} className="evidence-group">
               <h4 className="evidence-group-title">{group.label}</h4>
               {group.items.length === 0 ? (
-                <p className="muted small">{REVIEW_BRIEF_UI.noVerifiedSnippet}</p>
+                <p className="muted small">
+                  {group.concernId === 'rude_language'
+                    ? REVIEW_BRIEF_UI.rudeLanguageNoSnippet
+                    : REVIEW_BRIEF_UI.noVerifiedSnippet}
+                </p>
               ) : (
                 <ul className="evidence-list">
                   {group.items.map((item, index) => (

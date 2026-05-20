@@ -31,7 +31,7 @@ function isInsideRanges(index: number, ranges: Range[]): boolean {
 }
 
 function domainFromUrl(url: string): string | null {
-  const domainMatch = url.match(/^https?:\/\/([^\/\s?#]+)/i);
+  const domainMatch = url.match(/^https?:\/\/([^/\s?#]+)/i);
   return domainMatch?.[1]?.trim() ?? null;
 }
 

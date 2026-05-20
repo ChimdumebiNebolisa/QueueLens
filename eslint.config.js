@@ -78,4 +78,23 @@ export default defineConfig([
     plugins: { js },
     extends: ['js/recommended'],
   },
+  {
+    files: ['**/*.d.ts'],
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'off',
+    },
+  },
+  /** Tests live outside client/server/shared globs; needs project for type-aware rules. */
+  {
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    files: ['src/tests/**/*.{ts,tsx}'],
+    languageOptions: {
+      ecmaVersion: 2023,
+      globals: globals.node,
+      parserOptions: {
+        project: ['./tools/tsconfig.tests.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
 ]);

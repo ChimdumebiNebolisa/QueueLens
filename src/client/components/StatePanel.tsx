@@ -1,3 +1,5 @@
+import { REVIEW_BRIEF_UI } from '../../shared/reviewBrief.js';
+
 type Phase = 'loading' | 'success' | 'partial' | 'empty' | 'error';
 
 type Props = {
@@ -9,7 +11,7 @@ export function StatePanel({ phase, message }: Props) {
   const labels: Record<Phase, string> = {
     loading: 'Gathering context and running analysis…',
     success: 'Ready to review.',
-    partial: 'QueueLens finished with warnings.',
+    partial: REVIEW_BRIEF_UI.partialPhaseTitle,
     empty: 'Nothing to show yet.',
     error: 'Something went wrong.',
   };

@@ -12,7 +12,7 @@ export function App() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         const r = await fetchValidatedAnalysis();
         if (!cancelled) setResult(r);
@@ -65,7 +65,7 @@ export function App() {
 
       <footer className="footer muted small">
         <p className="privacy">
-          Privacy: only text shown in Technical details raw context may be sent to OpenAI for this review.
+          Privacy: only text you open in Technical details may be sent to OpenAI for this review.
         </p>
       </footer>
     </main>

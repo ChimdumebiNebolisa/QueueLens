@@ -21,12 +21,15 @@ export const REVIEW_BRIEF_UI = {
   beforeYouActHeading: 'Before you act',
   technicalDetailsHeading: 'Technical details',
   advisoryLine:
-    'You make the final call. QueueLens did not remove, ban, or change anything on Reddit.',
+    'You make the final call. QueueLens did not remove, ban, message, or change anything on Reddit.',
   noVerifiedSnippet:
     'QueueLens flagged this based on checks, but no exact snippet was verified. See Technical details.',
-  ungroupedEvidenceLabel: 'Other evidence QueueLens found',
+  ungroupedEvidenceLabel: 'Other snippets from the post',
+  partialPhaseTitle: 'QueueLens found a partial result.',
   partialBanner:
-    'QueueLens finished with warnings. Read the summary, then check Technical details if something looks off.',
+    'The summary is still usable, but some technical checks had warnings. More detail is in Before you act and Technical details.',
+  rudeLanguageNoSnippet:
+    'QueueLens flagged this for review, but no exact snippet was verified.',
   noAiHeadline: 'QueueLens could not produce a full summary',
   copyButton: 'Copy note',
   copiedButton: 'Copied',
@@ -47,6 +50,7 @@ export type ReviewConcern = {
   id: ReviewConcernId;
   label: string;
   shortWhy: string;
+  certainty?: 'typical' | 'needs_review';
 };
 
 export type GroupedEvidence = {
@@ -74,8 +78,8 @@ const CONCERN_DEFAULTS: Record<ReviewConcernId, { label: string; shortWhy: strin
     shortWhy: 'Contact details may have been shared and were redacted before analysis.',
   },
   rude_language: {
-    label: 'Rude or insulting language',
-    shortWhy: 'The text may break civility or harassment rules.',
+    label: 'Possible rude language',
+    shortWhy: 'Some wording may be rude or insulting.',
   },
   spam_links: {
     label: 'Multiple outbound links',
@@ -163,6 +167,30 @@ export function humanizeSummaryParagraph(summary: string): string {
   return text;
 }
 
+/** Evidence rows safe to show under the main brief (no subreddit rule quotes). */
+export function filterEvidenceForBrief(
+  items: EvidenceItem[],
+  result: ValidatedAnalysisResult,
+): EvidenceItem[] {
+  const titles = new Set(
+    result.contextBundle.subredditRules.map((r) => r.title.trim().toLowerCase()).filter(Boolean),
+  );
+  return items.filter((item) => {
+    if (item.source === 'subreddit_rule') return false;
+    const sn = item.snippet.trim();
+    if (sn && titles.has(sn.toLowerCase())) return false;
+    if (/rule\s+against/i.test(item.reason)) return false;
+    return true;
+  });
+}
+
+function getBriefEvidenceItemsFromConcerns(
+  result: ValidatedAnalysisResult,
+  _concerns: ReviewConcern[],
+): EvidenceItem[] {
+  return filterEvidenceForBrief(result.aiAnalysis?.evidence ?? [], result);
+}
+
 export function deriveConcerns(result: ValidatedAnalysisResult): ReviewConcern[] {
   const byId = new Map<ReviewConcernId, ReviewConcern>();
   const ai = result.aiAnalysis;
@@ -170,7 +198,8 @@ export function deriveConcerns(result: ValidatedAnalysisResult): ReviewConcern[]
   for (const signal of result.deterministicSignals) {
     const mapped = SIGNAL_CONCERN_MAP[signal.id];
     if (mapped) {
-      byId.set(mapped, buildConcern(mapped, { label: plainSignalLabel(signal) }));
+      const overrides = mapped === 'private_contact' ? {} : { label: plainSignalLabel(signal) };
+      byId.set(mapped, buildConcern(mapped, overrides));
     }
   }
 
@@ -206,8 +235,26 @@ export function deriveConcerns(result: ValidatedAnalysisResult): ReviewConcern[]
     'reported',
     'other',
   ];
-  const list = ordered.filter((id) => byId.has(id)).map((id) => byId.get(id)!);
-  return list.slice(0, 4);
+  let list = ordered.filter((id) => byId.has(id)).map((id) => byId.get(id)!);
+  list = list.slice(0, 4);
+
+  const briefItems = getBriefEvidenceItemsFromConcerns(result, list);
+  const rudeConcernIndex = list.findIndex((c) => c.id === 'rude_language');
+  if (rudeConcernIndex >= 0) {
+    const hasRudeEvidence = briefItems.some(
+      (item) => evidenceConcernId(item, result, list) === 'rude_language',
+    );
+    if (!hasRudeEvidence) {
+      const prev = list[rudeConcernIndex]!;
+      list[rudeConcernIndex] = {
+        ...prev,
+        shortWhy: REVIEW_BRIEF_UI.rudeLanguageNoSnippet,
+        certainty: 'needs_review',
+      };
+    }
+  }
+
+  return list;
 }
 
 function plainSignalLabel(signal: DeterministicSignal): string {
@@ -275,7 +322,7 @@ function evidenceConcernId(
 export function groupEvidenceByConcern(result: ValidatedAnalysisResult): GroupedEvidence[] {
   const concerns = deriveConcerns(result);
   const ai = result.aiAnalysis;
-  const items = ai?.evidence ?? [];
+  const items = filterEvidenceForBrief(ai?.evidence ?? [], result);
   const buckets = new Map<ReviewConcernId | 'ungrouped', EvidenceItem[]>();
 
   for (const item of items) {
@@ -306,6 +353,13 @@ export function groupEvidenceByConcern(result: ValidatedAnalysisResult): Grouped
   return groups;
 }
 
+function joinMayFragments(fragments: string[]): string {
+  if (fragments.length === 1) return fragments[0]!;
+  if (fragments.length === 2) return `${fragments[0]} and ${fragments[1]}`;
+  const last = fragments[fragments.length - 1]!;
+  return `${fragments.slice(0, -1).join(', ')}, and ${last}`;
+}
+
 export function deriveBriefHeadline(result: ValidatedAnalysisResult): string {
   const concerns = deriveConcerns(result);
   if (concerns.length === 0) {
@@ -318,15 +372,40 @@ export function deriveBriefHeadline(result: ValidatedAnalysisResult): string {
     return REVIEW_BRIEF_UI.noAiHeadline;
   }
 
-  const labels = concerns.map((c) => c.label.toLowerCase());
-  if (labels.length === 1) {
-    return `This looks like possible ${labels[0]}.`;
+  const ids = new Set(concerns.map((c) => c.id));
+  const hasSpam = ids.has('repeated_promo') || ids.has('spam_links');
+  const hasPrivate = ids.has('private_contact');
+  const hasRude = ids.has('rude_language');
+  const hasReported = ids.has('reported');
+  const hasOther = ids.has('other');
+
+  const mayParts: string[] = [];
+  if (hasSpam) mayParts.push('may be spam');
+  if (hasPrivate) mayParts.push('may include private contact info');
+  if (hasRude) mayParts.push('may include rude language');
+
+  if (mayParts.length > 0) {
+    let headline = `This ${joinMayFragments(mayParts)}`;
+    if (!headline.endsWith('.')) headline += '.';
+    if (hasReported) {
+      headline = headline.replace(/\.$/, '') + '. This item was also reported.';
+    }
+    return headline;
   }
-  if (labels.length === 2) {
-    return `This looks like possible ${labels[0]} and ${labels[1]}.`;
+
+  if (hasReported && !hasOther) {
+    return 'This item was reported.';
   }
-  const last = labels.pop();
-  return `This looks like possible ${labels.join(', ')}, and ${last}.`;
+
+  if (hasOther && !hasReported) {
+    return 'QueueLens found something worth a closer look.';
+  }
+
+  if (hasReported && hasOther) {
+    return 'This item was reported and needs a closer look.';
+  }
+
+  return 'QueueLens found something worth a closer look.';
 }
 
 export function translateValidationWarning(warning: string): string {
@@ -346,6 +425,43 @@ export function translateValidationWarning(warning: string): string {
   return warning;
 }
 
+function moderatorNoteFragmentsForRemove(ids: ReviewConcernId[]): string[] {
+  const fragments: string[] = [];
+  const idSet = new Set(ids);
+  if (idSet.has('repeated_promo') || idSet.has('spam_links')) {
+    fragments.push('repeat a promotional link');
+  }
+  if (idSet.has('private_contact')) {
+    fragments.push('include private contact info');
+  }
+  if (idSet.has('rude_language')) {
+    fragments.push('include rude language');
+  }
+  return fragments;
+}
+
+function moderatorNoteFragmentsForAdvisory(ids: ReviewConcernId[]): string[] {
+  const fragments: string[] = [];
+  const idSet = new Set(ids);
+  if (idSet.has('repeated_promo') || idSet.has('spam_links')) {
+    fragments.push('repeats a promotional link');
+  }
+  if (idSet.has('private_contact')) {
+    fragments.push('includes private contact info');
+  }
+  if (idSet.has('rude_language')) {
+    fragments.push('includes rude language');
+  }
+  return fragments;
+}
+
+function joinWithAnd(fragments: string[]): string {
+  if (fragments.length === 1) return fragments[0]!;
+  if (fragments.length === 2) return `${fragments[0]} and ${fragments[1]}`;
+  const last = fragments[fragments.length - 1]!;
+  return `${fragments.slice(0, -1).join(', ')}, and ${last}`;
+}
+
 export function deriveShortModeratorNote(result: ValidatedAnalysisResult): string {
   const ai = result.aiAnalysis;
   if (ai?.moderatorNoteDraft?.trim() && ai.moderatorNoteDraft.trim().length <= 280) {
@@ -358,18 +474,23 @@ export function deriveShortModeratorNote(result: ValidatedAnalysisResult): strin
 
   const concerns = deriveConcerns(result);
   const action = humanizeSuggestedAction(ai.suggestedAction);
-  const concernText =
-    concerns.length > 0
-      ? concerns.map((c) => c.label.toLowerCase()).join(' and ')
-      : 'a possible rule issue';
+  const kind = result.contextBundle.target.type === 'post' ? 'post' : 'comment';
+  const removeBits = moderatorNoteFragmentsForRemove(concerns.map((c) => c.id));
+  const advisoryBits = moderatorNoteFragmentsForAdvisory(concerns.map((c) => c.id));
 
   if (ai.suggestedAction === 'remove') {
-    return `Removed because this ${result.contextBundle.target.type} appears to involve ${concernText}. Please follow subreddit rules.`;
+    if (removeBits.length === 0) {
+      return `Removed because this ${kind} may break subreddit rules. Please follow subreddit rules.`;
+    }
+    return `Removed because this ${kind} appears to ${joinWithAnd(removeBits)}. Please follow subreddit rules.`;
   }
   if (ai.suggestedAction === 'approve') {
     return `Reviewed with QueueLens (${action.toLowerCase()}). No clear rule break stood out after checking evidence.`;
   }
-  return `${action}: QueueLens flagged ${concernText}. Please confirm on Reddit before acting.`;
+  if (advisoryBits.length > 0) {
+    return `This ${kind} may break subreddit rules because it ${joinWithAnd(advisoryBits)}. Please avoid spam and private contact details.`;
+  }
+  return `${action}: QueueLens flagged this for review. Please confirm on Reddit before acting.`;
 }
 
 export function deriveDetailedModeratorNote(result: ValidatedAnalysisResult): string {
@@ -402,11 +523,14 @@ export function deriveDetailedModeratorNote(result: ValidatedAnalysisResult): st
 }
 
 export function deriveBeforeYouActNotes(result: ValidatedAnalysisResult): string[] {
-  const notes: string[] = ['Check the post or comment on Reddit before you remove, approve, or message anyone.'];
+  const notes: string[] = [
+    'Check the post or comment on Reddit before you remove, approve, or message anyone.',
+    'QueueLens did not remove, ban, message, or change anything on Reddit.',
+  ];
   const ai = result.aiAnalysis;
 
   if (result.status === 'partial' || result.validationWarnings.length > 0) {
-    notes.push('This run finished with warnings. Open Technical details if something looks off.');
+    notes.push('Some checks had warnings. Open Technical details if you want the full story.');
   }
 
   if (result.contextBundle.unavailableContext.length > 0) {
@@ -414,7 +538,7 @@ export function deriveBeforeYouActNotes(result: ValidatedAnalysisResult): string
   }
 
   if (result.evidenceFallbackUsed || !ai?.evidence.length) {
-    notes.push('Evidence was limited. Read the snippets carefully or open raw context.');
+    notes.push('Evidence was limited. Read the snippets carefully or open Technical details for full text.');
   } else if (ai.evidence.length === 1) {
     notes.push('Only one verified snippet was available.');
   }

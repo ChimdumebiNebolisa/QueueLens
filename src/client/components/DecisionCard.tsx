@@ -24,8 +24,8 @@ export function DecisionCard({ result }: Props) {
         ) : null}
         <FlaggedConcernsPanel result={result} />
         <GroupedEvidencePanel result={result} fallbackUsed={result.evidenceFallbackUsed} />
-        <BeforeYouActPanel result={result} />
         <ModeratorNotePanel result={result} />
+        <BeforeYouActPanel result={result} />
         <TechnicalDetailsPanel result={result} />
       </section>
     );

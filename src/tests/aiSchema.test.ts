@@ -23,7 +23,8 @@ describe('aiSchema', () => {
   });
 
   it('missing required field fails', () => {
-    const { summary: _s, ...rest } = valid;
+    const rest = { ...valid };
+    Reflect.deleteProperty(rest, 'summary');
     const r = parseAIAnalysisJson(rest);
     expect(r.ok).toBe(false);
   });

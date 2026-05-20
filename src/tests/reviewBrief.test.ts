@@ -76,8 +76,61 @@ describe('reviewBrief', () => {
       evidence: [],
     });
     const headline = deriveBriefHeadline(result);
-    expect(headline.toLowerCase()).toContain('looks like');
+    expect(headline.toLowerCase()).toContain('may include private contact info');
     expect(headline).not.toContain('deterministic');
+  });
+
+  it('headline combines spam-related and private contact concerns', () => {
+    const bundle = loadFixture('spam-bare-domain.json');
+    const result = executeQueueLensOnBundle(bundle, {
+      summary: 'Spam and personal info.',
+      possibleRuleMatches: ['No spam or self-promotion', 'No personal or private information'],
+      reviewPriority: 'high',
+      suggestedAction: 'remove',
+      confidence: 'high',
+      evidence: [],
+    });
+    expect(deriveBriefHeadline(result)).toBe(
+      'This may be spam and may include private contact info. This item was also reported.',
+    );
+  });
+
+  it('uses Possible private contact info as the PII concern label even with phone signal wording', () => {
+    const bundle = loadFixture('fake-personal-info.json');
+    const result = executeQueueLensOnBundle(bundle, {
+      summary: 'PII in post.',
+      possibleRuleMatches: [],
+      reviewPriority: 'high',
+      suggestedAction: 'remove',
+      confidence: 'high',
+      evidence: [],
+    });
+    const pii = deriveConcerns(result).find((c) => c.id === 'private_contact');
+    expect(pii?.label).toBe('Possible private contact info');
+  });
+
+  it('drops subreddit rule quotes from brief evidence', () => {
+    const bundle = loadFixture('spam-bare-domain.json');
+    const result = executeQueueLensOnBundle(bundle, {
+      summary: 'Spam.',
+      possibleRuleMatches: ['No spam'],
+      reviewPriority: 'high',
+      suggestedAction: 'remove',
+      confidence: 'high',
+      evidence: [
+        { snippet: 'cheap-free-coins.example', source: 'reported_content', reason: 'Promo domain.' },
+        { snippet: 'No spam', source: 'subreddit_rule', reason: 'Rule title match.' },
+        {
+          snippet: 'No spam or self-promotion',
+          source: 'reported_content',
+          reason: 'Rule against spam.',
+        },
+      ],
+    });
+    const grouped = groupEvidenceByConcern(result);
+    const allSnippets = grouped.flatMap((g) => g.items.map((i) => i.snippet));
+    expect(allSnippets).toContain('cheap-free-coins.example');
+    expect(allSnippets.some((s) => s.includes('No spam'))).toBe(false);
   });
 
   it('translates technical validation warnings', () => {

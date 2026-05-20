@@ -14,7 +14,15 @@ export function FlaggedConcernsPanel({ result }: Props) {
       <h3>{REVIEW_BRIEF_UI.whyFlaggedHeading}</h3>
       <ul className="concern-card-list">
         {concerns.map((concern) => (
-          <li key={concern.id} className="concern-card">
+          <li
+            key={concern.id}
+            className={[
+              'concern-card',
+              concern.certainty === 'needs_review' ? 'concern-card-needs-review' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
             <strong>{concern.label}</strong>
             <p className="muted small">{concern.shortWhy}</p>
           </li>

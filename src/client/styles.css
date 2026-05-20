@@ -45,8 +45,8 @@ h1 {
 }
 
 .subsection {
-  margin-top: 10px;
-  padding-top: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
   border-top: 1px solid #e2e8f0;
 }
 
@@ -399,8 +399,9 @@ h1 {
 }
 
 .state-partial {
-  background: #fef3c7;
-  color: #92400e;
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
 }
 
 .state-success {
@@ -455,7 +456,8 @@ h1 {
 
 .subsection h3 {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .quality-list {
@@ -485,12 +487,12 @@ h1 {
 }
 
 .summary-card {
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 
 .summary-headline {
-  margin: 0 0 10px;
-  font-size: 1.1rem;
+  margin: 0 0 12px;
+  font-size: 1.2rem;
   line-height: 1.35;
 }
 
@@ -522,10 +524,15 @@ h1 {
 }
 
 .concern-card {
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-radius: 8px;
   background: #fff7ed;
   border: 1px solid #fed7aa;
+}
+
+.concern-card-needs-review {
+  background: #f8fafc;
+  border-color: #cbd5e1;
 }
 
 .concern-card strong {
