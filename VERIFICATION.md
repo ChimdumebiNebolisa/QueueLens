@@ -12,12 +12,17 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
 
 ## Files changed
 
+- `src/server/queueLensMenuGuards.ts` (new — recursive-analysis detection + toast constant)
+- `src/server/routes/menuAnalyze.ts` (guard runs before `submitCustomPost`; explicit toast response)
+- `devvit.json` (documented `postFilter: "none"`; menu description notes analysis-post limitation)
+- `src/tests/queueLensMenuGuards.test.ts` (new)
+- `src/tests/menuAnalyze.test.ts` (redis-session block test)
 - `VERIFICATION.md` (this update)
 
 ## Commands run
 
 - `npm run typecheck` — passed
-- `npm test` — passed (`7 files / 27 tests`)
+- `npm test` — passed (`8 files / 33 tests`)
 - `npm run build` — passed
 - `git status --short`
 
@@ -111,40 +116,50 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
 
 ### Case 5: recursive-analysis guardrail
 
-- Status: `live partial`, `tests pass`
-- Analysis post used in live retry: `https://www.reddit.com/r/queuelens_dev/comments/1ti44ff/queuelens_analysis/`
-- Live UI (this pass):
-  - Opened post moderation menu on an existing QueueLens analysis post; **Analyze with QueueLens** was visible
-  - Clicked **Analyze with QueueLens** on the analysis post itself
-  - URL stayed on the same analysis post (`1ti44ff`)
-  - No new QueueLens analysis post or fresh session URL was created
-  - Ephemeral Devvit toast text `QueueLens analysis posts cannot be analyzed.` was not captured in a screenshot
+- Status: `pass` (handler + tests); menu visibility `not supported by Devvit`
+- Analysis post used in prior live retry: `https://www.reddit.com/r/queuelens_dev/comments/1ti44ff/queuelens_analysis/`
+- Menu visibility (Devvit platform):
+  - Devvit menu items in `devvit.json` are static; Reddit docs state context/name/description do not support dynamic logic
+  - Optional `postFilter: "currentApp"` shows the item **only** on custom posts created by this app — the inverse of what QueueLens needs, so it was **not** used
+  - `postFilter: "none"` is set explicitly on the post menu item; **Analyze with QueueLens** remains visible on analysis posts until Reddit adds per-target hiding
+- Handler guard (this change):
+  - Detection runs **before** `submitCustomPost` via `isQueueLensAnalysisPostTarget()` in `src/server/queueLensMenuGuards.ts`
+  - Primary signal: existing Redis session key `queuelens:{postId}` on the analysis post
+  - Fallback: post title `QueueLens analysis` plus `queuelens` author or `/queuelens_analysis/` permalink
+  - Response: `showToast` with exact text `QueueLens analysis posts cannot be analyzed.` (`appearance: neutral`); no `navigateTo`; no new session write
+- Live UI (prior pass, unchanged):
+  - Menu item still visible on analysis posts (platform limitation)
+  - Click did not create a new analysis post (URL stayed on `1ti44ff`)
+  - Toast text was not screenshot-captured in browser automation
 - Automated coverage: `pass`
-  - `src/tests/menuAnalyze.test.ts` — analysis post returns toast, does not call `submitCustomPost` or write Redis session
-  - `src/server/routes/menuAnalyze.ts` — early return with same toast message
+  - `src/tests/menuAnalyze.test.ts` — toast returned; `submitCustomPost`, `redis.set`, and `redis.expire` not called for analysis targets
+  - `src/tests/menuAnalyze.test.ts` — blocks when `redis.get('queuelens:t3_analysis')` returns a session without calling `getPostById`
+  - `src/tests/queueLensMenuGuards.test.ts` — session-key and metadata detection paths
 
 ## Recursive-analysis guardrail
 
-- Live UI: partial (menu item reachable; click blocked in place; toast not screenshot-captured)
-- Local regression: `pass` (`menuAnalyze` test for analysis-post toast)
+- Menu hide on analysis posts: **not supported** (Devvit static menu config only)
+- Handler block + toast: **pass** (strengthened detection + tests)
+- Live UI: menu item still visible; prior live run showed in-place block without new post
 
 ## Local automated verification (this continuation pass)
 
 - `npm run typecheck`: passed
-- `npm test`: passed, `7 files / 27 tests`
+- `npm test`: passed, `8 files / 33 tests`
 - `npm run build`: passed
 
 ## Bugs found
 
-- None new in application code during this pass
-- E2E blockers:
-  - Cursor/browser automation cannot reliably submit Reddit rich-text post body (Case 4 fixture creation)
+- UX limitation (platform): Devvit cannot hide **Analyze with QueueLens** on QueueLens analysis posts; handler toast is the supported mitigation
+- E2E blockers (unchanged from prior passes):
   - Embedded Devvit webview automation did not reliably open the Case 4 raw-context drawer even though the control was visible
-  - Devvit toast on recursive-analysis guardrail is hard to capture in browser automation (Case 5 live toast)
+  - Devvit toast on recursive-analysis guardrail is hard to capture in browser automation
 
 ## Fixes made
 
-- None (no product code changes)
+- Strengthened recursive-analysis detection (Redis session key + metadata fallback) and centralized guard/toast constant
+- Documented Devvit menu limitation in `devvit.json` description and this file
+- Added unit tests for guard paths (no `submitCustomPost` / no new session on blocked targets)
 
 ## Submission readiness
 
@@ -153,10 +168,11 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
   - Cases 1–3: **pass** in fresh live run
   - Case 4: core live blocker cleared; cautious analysis verified live
   - Case 4 raw-context drawer open-state was not re-captured in this specific fixture because of embedded webview automation limits
-  - Case 5: recursive-analysis block held live (same URL, no new post) and is covered by unit tests; live toast screenshot remains optional
+  - Case 5: handler guard and tests **pass**; Reddit menu item remains visible on analysis posts until Devvit supports per-target hiding
 
 ## What remains
 
 1. Optionally obtain a manual click-through screenshot of the Case 4 raw-context drawer in its open state on `1ti44ff`.
-2. Optionally capture the Case 5 live toast screenshot on an analysis post.
+2. Optionally capture the Case 5 live toast screenshot on an analysis post (handler text is fixed in code/tests).
 3. Remove the NSFW tag from the Case 3 fixture if it is still present for clean demos.
+4. If Reddit/Devvit add dynamic menu visibility, hide **Analyze with QueueLens** on posts with an active `queuelens:{postId}` session or `QueueLens analysis` title.

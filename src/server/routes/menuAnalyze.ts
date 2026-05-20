@@ -1,6 +1,10 @@
 import { Hono } from 'hono';
 import { context, reddit, redis } from '@devvit/web/server';
 import type { MenuItemRequest, UiResponse } from '@devvit/web/shared';
+import {
+  isQueueLensAnalysisPostTarget,
+  QUEUE_LENS_RECURSIVE_ANALYSIS_TOAST,
+} from '../queueLensMenuGuards.js';
 
 export const menuAnalyze = new Hono();
 
@@ -13,15 +17,13 @@ function toast(text: string, appearance: 'neutral' | 'success' = 'neutral'): UiR
   };
 }
 
-function isQueueLensAnalysisPost(post: {
-  title?: string | null;
-  authorName?: string | null;
-  permalink?: string | null;
-}): boolean {
-  return (
-    post.title === 'QueueLens analysis' &&
-    (post.authorName === 'queuelens' || post.permalink?.includes('/queuelens_analysis/') === true)
-  );
+function blockedRecursiveAnalysisToast(): UiResponse {
+  return {
+    showToast: {
+      text: QUEUE_LENS_RECURSIVE_ANALYSIS_TOAST,
+      appearance: 'neutral',
+    },
+  };
 }
 
 menuAnalyze.post('/analyze-with-queuelens', async (c) => {
@@ -96,14 +98,14 @@ menuAnalyze.post('/analyze-with-queuelens', async (c) => {
     return c.json<UiResponse>(toast('QueueLens: post target id was not a post thing id (t3_...).'));
   }
 
-  try {
-    if (targetType === 'post') {
-      const targetPost = await reddit.getPostById(targetId as `t3_${string}`);
-      if (isQueueLensAnalysisPost(targetPost)) {
-        console.error('QueueLens menu blocked analysis post target', targetId);
-        return c.json<UiResponse>(toast('QueueLens analysis posts cannot be analyzed.'));
-      }
+  if (targetType === 'post') {
+    if (await isQueueLensAnalysisPostTarget(targetId)) {
+      console.error('QueueLens menu blocked analysis post target', targetId);
+      return c.json<UiResponse>(blockedRecursiveAnalysisToast());
     }
+  }
+
+  try {
 
     console.log(
       'QueueLens menu submitCustomPost start',

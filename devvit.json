@@ -21,14 +21,15 @@
     "items": [
       {
         "label": "Analyze with QueueLens",
-        "description": "Open an evidence-backed QueueLens review card for this post or comment.",
+        "description": "Open an evidence-backed QueueLens review card for this post. Unavailable on existing QueueLens analysis posts (handler shows a toast).",
         "location": "post",
         "forUserType": "moderator",
+        "postFilter": "none",
         "endpoint": "/internal/menu/analyze-with-queuelens"
       },
       {
         "label": "Analyze with QueueLens",
-        "description": "Open an evidence-backed QueueLens review card for this post or comment.",
+        "description": "Open an evidence-backed QueueLens review card for this comment.",
         "location": "comment",
         "forUserType": "moderator",
         "endpoint": "/internal/menu/analyze-with-queuelens"

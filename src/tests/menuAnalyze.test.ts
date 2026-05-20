@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
     submitCustomPost: vi.fn(),
   },
   redis: {
+    get: vi.fn(),
     set: vi.fn(),
     expire: vi.fn(),
   },
@@ -29,6 +30,7 @@ beforeAll(async () => {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.context.subredditName = 'queuelens_dev';
+  mocks.redis.get.mockResolvedValue(undefined);
   mocks.reddit.getPostById.mockResolvedValue({
     id: 't3_target',
     title: 'ordinary post',
@@ -101,8 +103,43 @@ describe('menuAnalyze', () => {
         text: 'QueueLens analysis posts cannot be analyzed.',
       },
     });
+    expect(mocks.redis.get).toHaveBeenCalledWith('queuelens:t3_analysis');
     expect(mocks.reddit.submitCustomPost).not.toHaveBeenCalled();
     expect(mocks.redis.set).not.toHaveBeenCalled();
+    expect(mocks.redis.expire).not.toHaveBeenCalled();
+  });
+
+  it('blocks recursive analysis when the target post already has a QueueLens session key', async () => {
+    mocks.redis.get.mockResolvedValue(
+      JSON.stringify({
+        targetType: 'post',
+        targetId: 't3_fixture',
+        subredditName: 'queuelens_dev',
+      }),
+    );
+
+    const response = await menuAnalyze.request('http://localhost/analyze-with-queuelens', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        location: 'post',
+        targetId: 't3_analysis',
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      showToast: {
+        appearance: 'neutral',
+        text: 'QueueLens analysis posts cannot be analyzed.',
+      },
+    });
+    expect(mocks.reddit.getPostById).not.toHaveBeenCalled();
+    expect(mocks.reddit.submitCustomPost).not.toHaveBeenCalled();
+    expect(mocks.redis.set).not.toHaveBeenCalled();
+    expect(mocks.redis.expire).not.toHaveBeenCalled();
   });
 
   it('shows a visible error when the menu target id is missing', async () => {
