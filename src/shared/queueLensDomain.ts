@@ -74,6 +74,28 @@ export type AIAnalysisResponse = {
   error?: string;
 };
 
+export type InvestigationTraceStepId =
+  | 'context_gathered'
+  | 'deterministic_signals'
+  | 'ai_call_outcome'
+  | 'validation_warnings';
+
+export type InvestigationTraceStepStatus = 'ok' | 'partial' | 'error';
+
+export type InvestigationTraceStep = {
+  id: InvestigationTraceStepId;
+  label: string;
+  status: InvestigationTraceStepStatus;
+  summary: string;
+  details?: string[];
+};
+
+/** Read-only advisory record of how analysis was produced; never triggers moderation. */
+export type InvestigationTrace = {
+  advisory: true;
+  steps: InvestigationTraceStep[];
+};
+
 export type ValidatedAnalysisResult = {
   status: 'success' | 'partial' | 'error';
   contextBundle: ContextBundle;
@@ -82,4 +104,5 @@ export type ValidatedAnalysisResult = {
   evidenceFallbackUsed: boolean;
   validationWarnings: string[];
   safeFallbackMessage?: string;
+  investigationTrace?: InvestigationTrace;
 };

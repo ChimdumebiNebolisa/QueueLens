@@ -44,7 +44,7 @@ export const useCounter = () => {
   const update = useCallback(
     async (action: 'increment' | 'decrement') => {
       if (!postId) {
-        console.error('No postId – cannot update counter');
+        console.error('No postId - cannot update counter');
         return;
       }
       try {

@@ -4,5 +4,7 @@ export type {
   AIAnalysis,
   AIAnalysisInput,
   AIAnalysisResponse,
+  InvestigationTrace,
+  InvestigationTraceStep,
   ValidatedAnalysisResult,
 } from '../../shared/queueLensDomain.js';

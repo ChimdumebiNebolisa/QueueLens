@@ -79,6 +79,18 @@ describe('executeQueueLensPipeline', () => {
 
     expect(result.evidenceFallbackUsed).toBe(true);
     expect(result.status).toBe('partial');
+    expect(result.investigationTrace?.advisory).toBe(true);
+    expect(result.investigationTrace?.steps.map((s) => s.id)).toEqual([
+      'context_gathered',
+      'deterministic_signals',
+      'ai_call_outcome',
+      'validation_warnings',
+    ]);
+    expect(result.investigationTrace?.steps[3]?.details).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('No valid AI evidence remained'),
+      ]),
+    );
     expect(result.aiAnalysis?.evidence).toEqual([
       {
         snippet: 'cheap-free-coins.example',
@@ -117,5 +129,7 @@ describe('executeQueueLensPipeline', () => {
 
     expect(result.evidenceFallbackUsed).toBe(false);
     expect(result.aiAnalysis?.evidence[0]?.source).toBe('reported_content');
+    expect(result.investigationTrace?.steps).toHaveLength(4);
+    expect(result.investigationTrace?.steps[3]?.status).toBe('ok');
   });
 });

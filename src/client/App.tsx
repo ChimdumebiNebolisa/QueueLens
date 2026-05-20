@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ValidatedAnalysisResult } from '../shared/queueLensDomain.js';
 import { fetchValidatedAnalysis } from './api.js';
+import { ContextSnapshotPanel } from './components/ContextSnapshotPanel.js';
 import { DecisionCard } from './components/DecisionCard.js';
 import { SignalList } from './components/SignalList.js';
 import { RawContextDrawer } from './components/RawContextDrawer.js';
@@ -63,6 +64,8 @@ export function App() {
       />
 
       <DecisionCard result={result} />
+
+      <ContextSnapshotPanel result={result} />
 
       <SignalList signals={result.deterministicSignals} />
 

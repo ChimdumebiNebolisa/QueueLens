@@ -2,6 +2,38 @@
 
 All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens`.
 
+## Phase A (guardrail audit + em-dash cleanup, 2026-05-19)
+
+| Check | Status | Evidence |
+| --- | --- | --- |
+| Static guardrail audit (no enforcement APIs, no client secrets, session fail-closed) | **pass** | `src/tests/guardrailAudit.test.ts` (8 tests) |
+| Typographic dash cleanup in user-facing `src/` | **pass** | `useCounter.ts` en-dash fixed; `moderationGuidance.test.ts` scans fixtures + client UI strings |
+| `App.tsx` context snapshot wiring | **pass** | `ContextSnapshotPanel` below `DecisionCard` (reconciliation pass) |
+| Investigation trace UI | **pass** | `InvestigationTracePanel` in `DecisionCard` |
+
+### Files changed (Phase A)
+
+- `src/tests/guardrailAudit.test.ts` (new)
+- `src/tests/moderationGuidance.test.ts` (extended dash + fixture coverage)
+- `src/shared/moderationGuidance.ts` (`containsTypographicDash`, U+2013/U+2014 guard)
+- `src/client/hooks/useCounter.ts` (en-dash to hyphen in log message)
+- `VERIFICATION.md` (this section)
+
+### Commands run (Phase A + reconciliation)
+
+- `npm run typecheck`: **pass** (after Investigation Trace pipeline types landed)
+- `npm test`: **pass** (98 tests, 17 files; includes `guardrailAudit.test.ts` 8, `moderationGuidance.test.ts` 11, `investigationTrace.test.ts` 5, `contextSnapshot.test.ts` 5)
+- `npm run build`: **pass**
+- Protected session-bridge files (`menuAnalyze`, `analyzeTarget`, `reviewDesk`, `analysisSession` server/shared/client): **unchanged** in this multitask pass
+
+### Multitask feature pass (reconciliation, 2026-05-19)
+
+| Area | Files |
+| --- | --- |
+| Investigation trace | `src/shared/investigationTrace.ts`, `queueLensDomain.ts`, `pipeline.ts`, `InvestigationTracePanel.tsx`, `investigationTrace.css`, `DecisionCard.tsx`, `investigationTrace.test.ts`, `pipeline.test.ts` |
+| Context snapshot | `src/shared/contextSnapshot.ts`, `ContextSnapshotPanel.tsx`, `contextSnapshot.css`, `contextSnapshot.test.ts`, `App.tsx` |
+| QA / guardrails | `guardrailAudit.test.ts`, `moderationGuidance.test.ts`, `moderationGuidance.ts`, `useCounter.ts` |
+
 ## Final verification snapshot
 
 - Date: `2026-05-19` (Review Desk postData session bridge, manual smoke test **live pass**)
@@ -201,8 +233,8 @@ After manual rerun, record the Review Desk permalink (for example `/r/queuelens_
 
 - **Reasons to be cautious**: derived from partial runs, limited evidence, non-high confidence, unavailable context, demo rules, synthetic/test markers, ambiguous civility, and a fixed note that QueueLens never auto-moderates.
 - **Suggested moderator note**: plain-English advisory text with copy button; uses AI `moderatorNoteDraft` when present, otherwise a deterministic fallback. No Devvit or Reddit mutation APIs are called from this UI.
-- **Em dash cleanup**: user-facing strings in `src/`, fixtures, and this doc use colons, commas, or hyphens instead of U+2014.
-- **Automated coverage**: `src/tests/moderationGuidance.test.ts` (bare-domain spam, personal-info, ambiguous civility, partial validation warnings).
+- **Typographic dash cleanup**: user-facing strings in `src/` and fixtures avoid U+2013/U+2014 (en/em dashes); use colons, commas, or ASCII hyphens instead.
+- **Automated coverage**: `src/tests/moderationGuidance.test.ts` (11 tests: caution reasons, moderator notes, fixture + client string scans); `src/tests/guardrailAudit.test.ts` (8 static guardrail checks per `03_GUARDRAILS.md`).
 
 ## Local automated verification (postData bridge docs pass)
 

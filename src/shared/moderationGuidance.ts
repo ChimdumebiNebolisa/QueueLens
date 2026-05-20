@@ -1,10 +1,16 @@
 import type { AIAnalysis, ValidatedAnalysisResult } from './queueLensDomain.js';
 
-/** User-facing strings must not contain U+2014 em dashes. */
+/** User-facing strings must not contain U+2013 en dashes or U+2014 em dashes. */
+export const EN_DASH = '\u2013';
 export const EM_DASH = '\u2014';
 
+export function containsTypographicDash(text: string): boolean {
+  return text.includes(EN_DASH) || text.includes(EM_DASH);
+}
+
+/** @deprecated Prefer containsTypographicDash; kept for existing tests. */
 export function containsEmDash(text: string): boolean {
-  return text.includes(EM_DASH);
+  return containsTypographicDash(text);
 }
 
 function reportedText(result: ValidatedAnalysisResult): string {

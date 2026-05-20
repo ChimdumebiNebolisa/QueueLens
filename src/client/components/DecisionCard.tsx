@@ -1,6 +1,7 @@
 import type { ValidatedAnalysisResult } from '../../shared/queueLensDomain.js';
 import { ConfidenceBadge } from './ConfidenceBadge.js';
 import { EvidencePanel } from './EvidencePanel.js';
+import { InvestigationTracePanel } from './InvestigationTracePanel.js';
 import { ModerationGuidance } from './ModerationGuidance.js';
 import { ReviewedTargetHeader } from './ReviewedTargetHeader.js';
 
@@ -16,6 +17,7 @@ export function DecisionCard({ result }: Props) {
         <h2>QueueLens</h2>
         <p className="muted">{result.safeFallbackMessage ?? 'No AI summary available for this run.'}</p>
         <ModerationGuidance result={result} />
+        <InvestigationTracePanel trace={result.investigationTrace} />
       </section>
     );
   }
@@ -92,6 +94,8 @@ export function DecisionCard({ result }: Props) {
           {result.evidenceFallbackUsed && <li className="quality-note">Deterministic evidence fallback used</li>}
         </ul>
       </div>
+
+      <InvestigationTracePanel trace={result.investigationTrace} />
     </section>
   );
 }

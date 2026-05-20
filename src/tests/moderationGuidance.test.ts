@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import type { ContextBundle, ValidatedAnalysisResult } from '../shared/queueLensDomain.js';
 import {
   containsEmDash,
+  containsTypographicDash,
   deriveCautionReasons,
   deriveSuggestedModeratorNote,
   looksLikeSyntheticOrTestContent,
@@ -13,12 +14,25 @@ import {
 import { executeQueueLensOnBundle } from '../server/analysis/quickValidate.js';
 const here = dirname(fileURLToPath(import.meta.url));
 
+const FIXTURE_NAMES = [
+  'ambiguous-report.json',
+  'clear-rule-violation.json',
+  'clean-post.json',
+  'fake-personal-info.json',
+  'spam-bare-domain.json',
+  'spam-comment.json',
+] as const;
+
 const KEY_USER_FACING_STRINGS = [
   ...Object.values(MODERATION_GUIDANCE_UI_LABELS),
   'Partial result: review warnings.',
   'Heuristic flags only, not proof of a violation.',
   'Advisory text only. Copying or reading this note does not change Reddit.',
   'Review assistance only. Final decision stays with the moderator.',
+  'No validated exact-match evidence snippets for this run.',
+  'Evidence (exact snippets)',
+  'Gathering context and running analysis…',
+  'Final moderation decisions remain with you. QueueLens does not remove, ban, message users, or change Reddit state.',
 ];
 
 function loadFixture(name: string): ContextBundle {
@@ -155,9 +169,74 @@ describe('moderationGuidance', () => {
     expect(componentSource).not.toMatch(/from ['"]@?devvit|from ['"].*reddit|submitCustomPost|removePost|banUser/i);
   });
 
-  it('keeps key user-facing strings free of em dashes', () => {
+  it('keeps key user-facing strings free of typographic dashes', () => {
     for (const text of KEY_USER_FACING_STRINGS) {
-      expect(containsEmDash(text)).toBe(false);
+      expect(containsTypographicDash(text)).toBe(false);
+    }
+  });
+
+  it('keeps test fixtures free of typographic dashes', () => {
+    for (const name of FIXTURE_NAMES) {
+      const raw = readFileSync(join(here, 'fixtures', name), 'utf8');
+      expect(containsTypographicDash(raw), name).toBe(false);
+    }
+  });
+
+  it('keeps derived moderator notes free of typographic dashes across fixtures', () => {
+    const cases: Array<{ fixture: string; result: ValidatedAnalysisResult }> = [
+      {
+        fixture: 'clear-rule-violation.json',
+        result: executeQueueLensOnBundle(loadFixture('clear-rule-violation.json'), {
+          summary: 'Personal attack language in reported comment.',
+          possibleRuleMatches: ['Be civil'],
+          reviewPriority: 'high',
+          suggestedAction: 'remove',
+          confidence: 'high',
+          evidence: [
+            {
+              snippet: 'You are an idiot',
+              source: 'reported_content',
+              reason: 'Direct insult in reported content.',
+            },
+          ],
+        }),
+      },
+      {
+        fixture: 'clean-post.json',
+        result: executeQueueLensOnBundle(loadFixture('clean-post.json'), {
+          summary: 'No clear rule breach in benign test post.',
+          possibleRuleMatches: [],
+          reviewPriority: 'low',
+          suggestedAction: 'approve',
+          confidence: 'medium',
+          evidence: [],
+        }),
+      },
+    ];
+
+    for (const { fixture, result } of cases) {
+      const note = deriveSuggestedModeratorNote(result);
+      expect(containsTypographicDash(note), fixture).toBe(false);
+      for (const reason of deriveCautionReasons(result)) {
+        expect(containsTypographicDash(reason), `${fixture} caution`).toBe(false);
+      }
+    }
+  });
+
+  it('scans client review UI sources for typographic dashes in string literals', () => {
+    const clientComponents = [
+      join(here, '..', 'client', 'components', 'ModerationGuidance.tsx'),
+      join(here, '..', 'client', 'components', 'StatePanel.tsx'),
+      join(here, '..', 'client', 'components', 'DecisionCard.tsx'),
+      join(here, '..', 'client', 'components', 'EvidencePanel.tsx'),
+      join(here, '..', 'shared', 'moderationGuidance.ts'),
+    ];
+
+    const literalPattern = /(['"`])(?:(?!\1).)*[\u2013\u2014](?:(?!\1).)*\1/g;
+    for (const filePath of clientComponents) {
+      const source = readFileSync(filePath, 'utf8');
+      const matches = source.match(literalPattern) ?? [];
+      expect(matches, filePath).toEqual([]);
     }
   });
 });

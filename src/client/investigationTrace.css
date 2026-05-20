@@ -1,0 +1,81 @@
+.investigation-trace {
+  border: 1px solid var(--border, #2a2f3a);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.investigation-trace-badge {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.7rem;
+}
+
+.investigation-trace-advisory {
+  margin: 0.5rem 0 0.75rem;
+}
+
+.investigation-trace-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.investigation-trace-step {
+  border-left: 3px solid var(--border, #2a2f3a);
+  padding-left: 0.75rem;
+}
+
+.investigation-trace-step.status-ok {
+  border-left-color: #3d8b5f;
+}
+
+.investigation-trace-step.status-partial {
+  border-left-color: #c9a227;
+}
+
+.investigation-trace-step.status-error {
+  border-left-color: #c94a4a;
+}
+
+.investigation-trace-step-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.investigation-trace-step-label {
+  font-weight: 600;
+}
+
+.investigation-trace-status.status-ok {
+  background: rgba(61, 139, 95, 0.15);
+}
+
+.investigation-trace-status.status-partial {
+  background: rgba(201, 162, 39, 0.15);
+}
+
+.investigation-trace-status.status-error {
+  background: rgba(201, 74, 74, 0.15);
+}
+
+.investigation-trace-summary {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.investigation-trace-details {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+}
+
+.investigation-trace-details li {
+  margin-bottom: 0.25rem;
+}
