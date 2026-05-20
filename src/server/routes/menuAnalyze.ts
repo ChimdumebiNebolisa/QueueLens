@@ -1,10 +1,11 @@
 import { Hono } from 'hono';
-import { context, reddit, redis } from '@devvit/web/server';
+import { context, redis } from '@devvit/web/server';
 import type { MenuItemRequest, UiResponse } from '@devvit/web/shared';
 import {
   isQueueLensAnalysisPostTarget,
   QUEUE_LENS_RECURSIVE_ANALYSIS_TOAST,
 } from '../queueLensMenuGuards.js';
+import { getOrCreateReviewDeskPost, toAbsoluteRedditUrl } from '../reviewDesk.js';
 
 export const menuAnalyze = new Hono();
 
@@ -106,29 +107,21 @@ menuAnalyze.post('/analyze-with-queuelens', async (c) => {
   }
 
   try {
-
     console.log(
-      'QueueLens menu submitCustomPost start',
+      'QueueLens menu review desk resolve start',
       JSON.stringify({ subredditName, targetId, targetType }),
     );
 
-    const post = await reddit.submitCustomPost({
-      subredditName,
-      title: 'QueueLens analysis',
-      entry: 'default',
-    });
-
-    const queueLensPostUrl = post.permalink.startsWith('http')
-      ? post.permalink
-      : `https://www.reddit.com${post.permalink}`;
+    const desk = await getOrCreateReviewDeskPost(subredditName);
+    const reviewDeskUrl = toAbsoluteRedditUrl(desk.permalink);
 
     console.log(
-      'QueueLens menu submitCustomPost success',
+      'QueueLens menu review desk resolved',
       JSON.stringify({
-        queueLensPostId: post.id,
-        queueLensPostUrl,
-        queueLensPostPermalink: post.permalink,
-        queueLensRawPostUrl: post.url,
+        deskPostId: desk.id,
+        reviewDeskUrl,
+        deskPermalink: desk.permalink,
+        deskRawPostUrl: desk.url,
       }),
     );
 
@@ -138,7 +131,7 @@ menuAnalyze.post('/analyze-with-queuelens', async (c) => {
       subredditName,
     } satisfies { targetType: 'post' | 'comment'; targetId: string; subredditName: string });
 
-    const key = `queuelens:${post.id}`;
+    const key = `queuelens:${desk.id}`;
     await redis.set(key, payload);
     await redis.expire(key, 3600);
 
@@ -152,7 +145,7 @@ menuAnalyze.post('/analyze-with-queuelens', async (c) => {
         text: 'Opening QueueLens...',
         appearance: 'success',
       },
-      navigateTo: queueLensPostUrl,
+      navigateTo: reviewDeskUrl,
     });
   } catch (e) {
     console.error(

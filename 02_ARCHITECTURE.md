@@ -18,9 +18,9 @@ QueueLens does not run as a direct menu-action-to-card route. The implemented fl
 
 1. `devvit.json` exposes a moderator-only `Analyze with QueueLens` menu item for `post` and `comment`.
 2. The menu action calls `src/server/routes/menuAnalyze.ts`.
-3. `menuAnalyze.ts` validates menu input, infers target type, and creates a QueueLens custom post with `reddit.submitCustomPost(...)`.
-4. `menuAnalyze.ts` stores a short-lived Redis session containing `targetType`, `targetId`, and `subredditName`, keyed by the custom post id.
-5. The custom post opens the `default` post entrypoint from `devvit.json`, which serves `src/client/splash.html`.
+3. `menuAnalyze.ts` validates menu input, infers target type, and resolves the subreddit Review Desk via `src/server/reviewDesk.ts` (`getOrCreateReviewDeskPost`, creating the desk with `reddit.submitCustomPost(...)` only when needed).
+4. `menuAnalyze.ts` stores a short-lived Redis handoff containing `targetType`, `targetId`, and `subredditName` at `queuelens:{deskPostId}`, with the desk registry at `queuelens:desk:{subredditName}`.
+5. The Review Desk custom post opens the `default` post entrypoint from `devvit.json`, which serves `src/client/splash.html`.
 6. `src/client/splash.tsx` mounts `src/client/App.tsx`.
 7. `App.tsx` calls `GET /api/analyze`.
 8. `src/server/routes/analyzeTarget.ts` reads the Redis session using the current post id from Devvit context.
@@ -57,20 +57,21 @@ Responsibilities:
 Owns:
 
 - menu request parsing
-- custom post creation
+- Review Desk resolution (one reusable custom post per subreddit)
 - temporary Redis session storage
-- navigation into the QueueLens post
+- navigation into the Review Desk post
 
-Primary file:
+Primary files:
 
 - `src/server/routes/menuAnalyze.ts`
+- `src/server/reviewDesk.ts`
 
 Responsibilities:
 
 - accept only supported menu locations
 - validate expected post/comment thing id shape
-- create a QueueLens custom post
-- store only the minimal handoff payload needed for analysis
+- get or create the QueueLens Review Desk for the subreddit
+- store only the minimal handoff payload needed for analysis on the desk post id
 - return safe UI feedback if startup fails
 
 ### 3. Analysis route layer

@@ -17,6 +17,7 @@ vi.mock('@devvit/web/server', () => ({
 import {
   isQueueLensAnalysisPostShape,
   isQueueLensAnalysisPostTarget,
+  isQueueLensReviewDeskPostShape,
   QUEUE_LENS_RECURSIVE_ANALYSIS_TOAST,
 } from '../server/queueLensMenuGuards.js';
 
@@ -32,6 +33,16 @@ describe('queueLensMenuGuards', () => {
     });
   });
 
+  it('detects QueueLens Review Desk posts by title and permalink', () => {
+    expect(
+      isQueueLensReviewDeskPostShape({
+        title: 'QueueLens Review Desk',
+        authorName: 'other-bot',
+        permalink: '/r/queuelens_dev/comments/desk123/queuelens_review_desk/',
+      }),
+    ).toBe(true);
+  });
+
   it('detects QueueLens analysis posts by title and permalink', () => {
     expect(
       isQueueLensAnalysisPostShape({
@@ -42,9 +53,16 @@ describe('queueLensMenuGuards', () => {
     ).toBe(true);
   });
 
-  it('does not treat ordinary posts as QueueLens analysis posts', () => {
+  it('does not treat ordinary posts as QueueLens blocked posts', () => {
     expect(
       isQueueLensAnalysisPostShape({
+        title: 'ordinary post',
+        authorName: 'queuelens',
+        permalink: '/r/queuelens_dev/comments/target123/ordinary_post/',
+      }),
+    ).toBe(false);
+    expect(
+      isQueueLensReviewDeskPostShape({
         title: 'ordinary post',
         authorName: 'queuelens',
         permalink: '/r/queuelens_dev/comments/target123/ordinary_post/',
@@ -79,9 +97,20 @@ describe('queueLensMenuGuards', () => {
     expect(mocks.reddit.getPostById).toHaveBeenCalledWith('t3_analysis');
   });
 
+  it('blocks Review Desk posts by metadata', async () => {
+    mocks.reddit.getPostById.mockResolvedValue({
+      id: 't3_desk',
+      title: 'QueueLens Review Desk',
+      authorName: 'queuelens',
+      permalink: '/r/queuelens_dev/comments/desk123/queuelens_review_desk/',
+    });
+
+    await expect(isQueueLensAnalysisPostTarget('t3_desk')).resolves.toBe(true);
+  });
+
   it('exports the recursive-analysis toast message', () => {
     expect(QUEUE_LENS_RECURSIVE_ANALYSIS_TOAST).toBe(
-      'QueueLens cannot analyze QueueLens analysis posts.',
+      'QueueLens cannot analyze QueueLens Review Desk posts.',
     );
   });
 });

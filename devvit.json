@@ -21,7 +21,7 @@
     "items": [
       {
         "label": "Analyze with QueueLens",
-        "description": "Open a QueueLens review card. Not available on QueueLens analysis posts.",
+        "description": "Open a QueueLens review card. Not available on the QueueLens Review Desk post.",
         "location": "post",
         "forUserType": "moderator",
         "postFilter": "none",

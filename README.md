@@ -24,9 +24,9 @@ QueueLens is advisory only. It does not remove content, ban users, lock threads,
 
 1. A moderator opens the menu on a post or comment.
 2. The moderator selects `Analyze with QueueLens`.
-3. The server creates a QueueLens custom post with `submitCustomPost`.
-4. The server stores a short-lived Redis session for that post.
-5. The custom post loads the `splash` entrypoint.
+3. The server gets or creates one reusable **QueueLens Review Desk** custom post per subreddit (`submitCustomPost` on first use only).
+4. The server stores a short-lived Redis handoff at `queuelens:{deskPostId}` with the selected target (`targetType`, `targetId`, `subredditName`) and navigates to the Review Desk URL.
+5. The Review Desk loads the `splash` entrypoint.
 6. `App.tsx` calls `GET /api/analyze`.
 7. The server gathers bounded Reddit context, runs deterministic signals, builds the AI prompt, calls OpenAI, validates schema, validates exact evidence, and returns a trusted result.
 8. The client renders the decision card, evidence panel, signal list, and raw context drawer.
@@ -113,7 +113,7 @@ QueueLens also provides a strict list of allowed evidence snippets so the model 
 - QueueLens does not expose the OpenAI key to the client.
 - QueueLens does not log secrets.
 - QueueLens does not store long-term user profiles.
-- Redis is used only for short-lived QueueLens session handoff.
+- Redis stores the subreddit Review Desk pointer (`queuelens:desk:{subredditName}`) and short-lived analyze handoff (`queuelens:{deskPostId}`, 1 hour).
 - Raw context remains visible to the moderator.
 - Exact evidence validation remains strict.
 
@@ -137,12 +137,12 @@ The final moderation decision always remains with the human moderator.
 2. Open a test post in the target subreddit as a moderator.
 3. Open the post menu.
 4. Select `Analyze with QueueLens`.
-5. Confirm QueueLens opens in a custom post.
+5. Confirm QueueLens opens the subreddit Review Desk custom post.
 6. Confirm the card renders and the raw context drawer is available.
 
 Current status:
 
-- Post menu/session flow was manually verified.
+- Post menu/session flow was manually verified on the prior per-analyze post model; re-verify on the Review Desk after deploy.
 
 ## How to test comment flow
 
@@ -150,12 +150,12 @@ Current status:
 2. Open a test comment in the target subreddit as a moderator.
 3. Open the comment menu.
 4. Select `Analyze with QueueLens`.
-5. Confirm QueueLens opens in a custom post.
+5. Confirm QueueLens opens the subreddit Review Desk custom post.
 6. Confirm the analysis completes and parent context appears when available.
 
 Current status:
 
-- Comment target flow still needs manual verification.
+- Comment target flow still needs manual verification on the Review Desk.
 
 ## Demo test cases
 
