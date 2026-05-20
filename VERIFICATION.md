@@ -76,33 +76,56 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
 
 ### Case 4: ambiguous civility
 
-- Status: `blocked / not run` (fixture missing; submit automation failed)
-- Expected fixture:
+- Status: `live pass` with one artifact caveat
+- Fixture:
   - title: `[QueueLens E2E] Ambiguous civility fixture`
   - body: `[QueueLens E2E] Ambiguous civility fixture. This reply is annoying and unhelpful, but I am not sure it clearly breaks a rule.`
-- Blockers in this pass:
-  - No `[QueueLens E2E] Ambiguous civility fixture` post found on subreddit feed or in-subreddit search
-  - Reddit submit form: title fills via automation; rich-text body does not register (`browser_type` reports value unchanged; **Post** stays disabled)
-- Expected pass criteria (not yet live-verified):
-  - Cautious suggested action (`needs_manual_review`, `review`, `monitor`, or `no action`) with low/medium confidence
-  - Review card, evidence, quality, raw context render
-- Next step: create fixture manually in `r/queuelens_dev`, run **Analyze with QueueLens**, capture screenshots under `manual-artifacts\queuelens-live-2026-05-19\case4-*`
+- Fixture post URL:
+  - `https://www.reddit.com/r/queuelens_dev/comments/1ti3shk/queuelens_e2e_ambiguous_civility_fixture/`
+- Fresh analysis post URL:
+  - `https://www.reddit.com/r/queuelens_dev/comments/1ti44ff/queuelens_analysis/`
+- Verified behaviors:
+  - Fixture was created manually in signed-in Chrome because Reddit's rich-text submit body was not reliable under automation
+  - Post moderation menu showed `Analyze with QueueLens`
+  - Fresh QueueLens analysis post was created for the fixture
+  - Review card rendered with a cautious outcome:
+    - suggested action: `needs_manual_review`
+    - review priority: `medium`
+    - confidence: `medium`
+  - Evidence rendered with grounded snippets from the fixture
+  - Analysis quality section rendered (`Schema valid`, `Evidence validated`, `No automatic action taken`, `Raw context available`)
+  - Deterministic signals section rendered
+  - No automatic Reddit moderation action was taken; footer still states final moderation stays with the moderator
+- Caveat:
+  - The raw-context control was visible live, but the embedded Devvit webview did not allow a reliable automated click-through to capture the Case 4 drawer in its open state. This remains an inference from:
+    - the shared `RawContextDrawer` client component (`src/client/components/RawContextDrawer.tsx`)
+    - the live Case 3 capture where the same control opened and showed `Hide raw context`
+- Screenshot paths:
+  - `C:\Users\Chimdumebi\DevvitTemp\manual-artifacts\queuelens-live-2026-05-19\case4-fixture-post.png`
+  - `C:\Users\Chimdumebi\DevvitTemp\manual-artifacts\queuelens-live-2026-05-19\case4-mod-menu-queuelens.png`
+  - `C:\Users\Chimdumebi\DevvitTemp\manual-artifacts\queuelens-live-2026-05-19\case4-review-card-after-wait.png`
+  - `C:\Users\Chimdumebi\DevvitTemp\manual-artifacts\queuelens-live-2026-05-19\case4-evidence-panel-2.png`
+  - `C:\Users\Chimdumebi\DevvitTemp\manual-artifacts\queuelens-live-2026-05-19\case4-quality-checks.png`
+  - `C:\Users\Chimdumebi\DevvitTemp\manual-artifacts\queuelens-live-2026-05-19\case4-deterministic-signals.png`
+  - `C:\Users\Chimdumebi\DevvitTemp\manual-artifacts\queuelens-live-2026-05-19\case4-raw-context-open.png` (control visible; open-state capture not obtained)
 
 ### Case 5: recursive-analysis guardrail
 
-- Status: `pass` (automated tests); live UI `partial` (toast not captured; no new analysis post observed)
-- Analysis post used: `https://www.reddit.com/r/queuelens_dev/comments/1ti30ny/queuelens_analysis/?playtest=queuelens`
+- Status: `live partial`, `tests pass`
+- Analysis post used in live retry: `https://www.reddit.com/r/queuelens_dev/comments/1ti44ff/queuelens_analysis/`
 - Live UI (this pass):
-  - Opened post moderation menu on analysis post; **Analyze with QueueLens** visible
-  - Automated click on menu item did not navigate away from `1ti30ny` (no second analysis post created in feed)
-  - Ephemeral Devvit toast text `QueueLens analysis posts cannot be analyzed.` was not captured by browser wait (likely timing/overlay)
+  - Opened post moderation menu on an existing QueueLens analysis post; **Analyze with QueueLens** was visible
+  - Clicked **Analyze with QueueLens** on the analysis post itself
+  - URL stayed on the same analysis post (`1ti44ff`)
+  - No new QueueLens analysis post or fresh session URL was created
+  - Ephemeral Devvit toast text `QueueLens analysis posts cannot be analyzed.` was not captured in a screenshot
 - Automated coverage: `pass`
   - `src/tests/menuAnalyze.test.ts` — analysis post returns toast, does not call `submitCustomPost` or write Redis session
   - `src/server/routes/menuAnalyze.ts` — early return with same toast message
 
 ## Recursive-analysis guardrail
 
-- Live UI: partial (menu item reachable; no re-analysis navigation; toast not screenshot-captured)
+- Live UI: partial (menu item reachable; click blocked in place; toast not screenshot-captured)
 - Local regression: `pass` (`menuAnalyze` test for analysis-post toast)
 
 ## Local automated verification (this continuation pass)
@@ -115,7 +138,8 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
 
 - None new in application code during this pass
 - E2E blockers:
-  - Cursor browser automation cannot reliably submit Reddit rich-text post body (Case 4 fixture creation)
+  - Cursor/browser automation cannot reliably submit Reddit rich-text post body (Case 4 fixture creation)
+  - Embedded Devvit webview automation did not reliably open the Case 4 raw-context drawer even though the control was visible
   - Devvit toast on recursive-analysis guardrail is hard to capture in browser automation (Case 5 live toast)
 
 ## Fixes made
@@ -124,14 +148,15 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
 
 ## Submission readiness
 
-- QueueLens is **not ready for full submission** yet.
+- QueueLens is **close, but not fully submission-ready from this artifact set alone**.
 - Reason:
   - Cases 1–3: **pass** in fresh live run
-  - Case 4: **not run** (fixture missing; manual post required)
-  - Case 5: guardrail **proven in unit tests**; live toast screenshot still optional
+  - Case 4: core live blocker cleared; cautious analysis verified live
+  - Case 4 raw-context drawer open-state was not re-captured in this specific fixture because of embedded webview automation limits
+  - Case 5: recursive-analysis block held live (same URL, no new post) and is covered by unit tests; live toast screenshot remains optional
 
 ## What remains
 
-1. Manually create Case 4 fixture post and run **Analyze with QueueLens**; capture `case4-*` screenshots; confirm cautious suggested action.
-2. Optionally capture Case 5 live toast screenshot on analysis post `1ti30ny`.
-3. Remove NSFW tag from Case 3 fixture if still present for clean demos.
+1. Optionally obtain a manual click-through screenshot of the Case 4 raw-context drawer in its open state on `1ti44ff`.
+2. Optionally capture the Case 5 live toast screenshot on an analysis post.
+3. Remove the NSFW tag from the Case 3 fixture if it is still present for clean demos.
