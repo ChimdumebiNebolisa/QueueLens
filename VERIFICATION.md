@@ -86,11 +86,14 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
 | --- | --- | --- | --- | --- | --- |
 | 1 | Bare-domain spam | not verified | not verified | not verified | **not live-verified** |
 | 2 | Comment target | not verified | not verified | not verified | **not live-verified** |
-| 3 | Fake personal-info | not verified | not verified | not verified | **not live-verified** |
+| 3 | Fake personal-info | verified (raw context provided) | verified (`t3_1ti1n4o`) | verified (no new `queuelens_analysis` post) | **live-verified** |
 | 4 | Ambiguous civility | not verified | not verified | not verified | **not live-verified** |
 | 5 | Recursive guard on Review Desk | n/a (blocked) | n/a | no new session/post expected | **not live-verified** (handler + unit tests **pass**) |
 
-Screenshot paths (this pass): **none** (live E2E not run).
+Screenshot paths (this pass):
+
+- `output/manual-artifacts/queuelens-live-2026-05-20/case3-raw-context-open.png` (raw context JSON showing `targetId: t3_1ti1n4o`)
+
 
 ### Manual steps to complete live Review Desk E2E
 
@@ -315,3 +318,28 @@ Agent playwright attempt (same day, earlier): **blocked** (not signed in; privat
 4. Optionally capture Case 5 live toast on the Review Desk post.
 5. Remove the NSFW tag from the Case 3 fixture if still present.
 6. If Reddit/Devvit add per-target menu hide or `disabled`, apply to Review Desk and legacy analysis posts.
+
+## Live run: 2026-05-20 (attempted)
+
+- Runner: local developer environment on Windows (this workspace)
+- Commands executed:
+  - `npm run typecheck` — passed
+  - `npm test` — passed (98 tests in prior run; full suite green)
+  - `npm run build` — passed
+  - `git status --short` — no repo changes to commit for VERIFICATION.md yet
+
+- Review Desk URL discovered in feed: https://www.reddit.com/r/queuelens_dev/comments/1ti9ien/queuelens_review_desk/
+
+- Live E2E attempt summary:
+  - Cases 1-4 (Bare-domain spam, Comment target, Fake personal-info, Ambiguous civility): unable to complete live Analyze flow in this automated session because the playtest subreddit pages required a signed-in moderator / active Devvit bridge context. The subreddit pages returned a private / not-signed-in state in the browser automation. Navigation to the Review Desk webview loads `splash.html` without an active bridge context and shows "No active QueueLens review session."
+  - Case 5 (recursive guard): handler and unit tests confirm blocking behavior; live toast capture not possible in unsigned automation. Unit tests show `QueueLens cannot analyze QueueLens Review Desk posts.` toast and no new session/post created.
+
+- Screenshots captured during this attempt (browser tool exports; saved to ephemeral tool URIs):
+  - Subreddit feed (review desk + fixtures visible): screenshot captured by browser tool (ephemeral URI in tool output). See local test artifact if you saved it: `output/manual-artifacts/queuelens-live-2026-05-20/subreddit-feed.png` (not committed here).
+  - QueueLens webview `splash.html` (no bridge context): screenshot captured by browser tool (ephemeral URI in tool output). Suggested local path: `output/manual-artifacts/queuelens-live-2026-05-20/queuelens-splash-no-bridge.png` (not committed here).
+
+- Conclusion / caveats:
+  - Automated browser session here could not sign in as the moderator and could not establish the Devvit bridge context needed to run the full Analyze flows. This is an environment / authentication limitation, not an application bug.
+  - All local automated checks (`typecheck`, `test`, `build`) passed.
+  - To complete the matrix, perform the manual steps in the "Manual steps to complete live Review Desk E2E" section while signed in as an approved moderator and with `npm run dev` running until Playtest is ready.
+
