@@ -9,7 +9,7 @@ export function StatePanel({ phase, message }: Props) {
   const labels: Record<Phase, string> = {
     loading: 'Gathering context and running analysis…',
     success: 'Analysis complete.',
-    partial: 'Partial result — review warnings.',
+    partial: 'Partial result: review warnings.',
     empty: 'Nothing to show yet.',
     error: 'Something went wrong.',
   };

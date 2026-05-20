@@ -338,3 +338,21 @@ h1 {
   background: #fef3c7;
   color: #92400e;
 }
+
+.caution {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+}
+
+.caution-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: #9a3412;
+}
+
+.caution-list li + li {
+  margin-top: 6px;
+}

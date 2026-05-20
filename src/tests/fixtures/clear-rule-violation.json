@@ -4,7 +4,7 @@
     "type": "comment",
     "subredditName": "demo",
     "authorName": "troll",
-    "bodyText": "You are an idiot — not be civil at all.",
+    "bodyText": "You are an idiot and not be civil at all.",
     "reportReason": "harassment"
   },
   "parentContext": [{ "text": "Please keep comments constructive.", "sourceLabel": "parent" }],

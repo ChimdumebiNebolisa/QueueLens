@@ -4,7 +4,7 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
 
 ## Final verification snapshot
 
-- Date: `2026-05-19` (fresh E2E run — Cases 3–5 continuation)
+- Date: `2026-05-19` (moderation caution guidance polish)
 - Playtest version observed: `v0.0.1.27` (dev server on port `5678`)
 - Subreddit: `r/queuelens_dev`
 - Playtest URL: `https://www.reddit.com/r/queuelens_dev/?playtest=queuelens`
@@ -12,17 +12,18 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
 
 ## Files changed
 
-- `src/server/queueLensMenuGuards.ts` (recursive-analysis toast text)
-- `devvit.json` (post menu description warns analysis posts are unsupported)
-- `src/tests/queueLensMenuGuards.test.ts` (toast constant assertion)
-- `src/tests/menuAnalyze.test.ts` (toast assertion)
+- `src/shared/moderationGuidance.ts` (caution reasons and suggested moderator note derivation)
+- `src/client/components/ModerationGuidance.tsx` (Reasons to be cautious and Suggested moderator note UI)
+- `src/client/components/DecisionCard.tsx` (wire guidance panels into review card)
+- `src/tests/moderationGuidance.test.ts` (caution, note, no Reddit action, no em dash in key strings)
+- `src/client/components/StatePanel.tsx`, `SignalList.tsx`, fixtures (replace em dashes in user-facing copy)
 - `VERIFICATION.md` (this update)
 
 ## Commands run
 
-- `npm run typecheck` — passed
-- `npm test` — passed (`8 files / 33 tests`)
-- `npm run build` — passed
+- `npm run typecheck`: passed
+- `npm test`: passed (see Local automated verification below)
+- `npm run build`: passed
 - `git status --short`
 
 ## Final case matrix (fresh E2E run)
@@ -63,7 +64,7 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
   - Raw context drawer opened (`Hide raw context` visible)
 - Caveats recorded:
   - Partial result: unsupported `reported_content` evidence snippet removed (expected guardrail behavior)
-  - Suggested action was **remove** with **high** confidence and **high** priority despite synthetic E2E fixture text — behavior note for demo review, not a redaction failure
+  - Suggested action was **remove** with **high** confidence and **high** priority despite synthetic E2E fixture text (behavior note for demo review, not a redaction failure)
   - Fixture post may still carry an accidental NSFW tag from earlier automation probing (`Remove NSFW tag` available in mod menu)
 - Screenshot paths:
   - `C:\Users\Chimdumebi\DevvitTemp\manual-artifacts\queuelens-live-2026-05-19\case3-review-card.png`
@@ -117,7 +118,7 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
 
 - Status: `pass` (handler + tests); permanent per-target menu disable `not supported by Devvit`
 - Analysis post used in prior live retry: `https://www.reddit.com/r/queuelens_dev/comments/1ti44ff/queuelens_analysis/`
-- Menu visibility (Devvit platform — re-checked in repo):
+- Menu visibility (Devvit platform, re-checked in repo):
   - `devvit.json` schema (`@devvit/shared-types/schemas/config-file.v1.json`) allows only: `label`, `description`, `forUserType`, `location`, `endpoint`, `postFilter` (`none` | `currentApp`)
   - No `disabled`, `enabled`, `commentFilter`, or dynamic per-post predicates in this repo’s Devvit packages
   - Reddit may briefly grey the item client-side, but reopening the menu shows it clickable again; there is no supported permanent disabled state for specific posts
@@ -133,9 +134,9 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
   - Click did not create a new analysis post (URL stayed on `1ti44ff`)
   - Toast text was not screenshot-captured in browser automation
 - Automated coverage: `pass`
-  - `src/tests/menuAnalyze.test.ts` — toast returned; `submitCustomPost`, `redis.set`, and `redis.expire` not called for analysis targets
-  - `src/tests/menuAnalyze.test.ts` — blocks when `redis.get('queuelens:t3_analysis')` returns a session without calling `getPostById`
-  - `src/tests/queueLensMenuGuards.test.ts` — session-key and metadata detection paths
+  - `src/tests/menuAnalyze.test.ts`: toast returned; `submitCustomPost`, `redis.set`, and `redis.expire` not called for analysis targets
+  - `src/tests/menuAnalyze.test.ts`: blocks when `redis.get('queuelens:t3_analysis')` returns a session without calling `getPostById`
+  - `src/tests/queueLensMenuGuards.test.ts`: session-key and metadata detection paths
 
 ## Recursive-analysis guardrail
 
@@ -144,10 +145,17 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
 - Handler block + toast: **pass** (authoritative; toast `QueueLens cannot analyze QueueLens analysis posts.`)
 - Live UI: menu item remains visible; brief client greying is not a reliable disable
 
+## Moderation caution guidance (2026-05-19)
+
+- **Reasons to be cautious**: derived from partial runs, limited evidence, non-high confidence, unavailable context, demo rules, synthetic/test markers, ambiguous civility, and a fixed note that QueueLens never auto-moderates.
+- **Suggested moderator note**: plain-English advisory text with copy button; uses AI `moderatorNoteDraft` when present, otherwise a deterministic fallback. No Devvit or Reddit mutation APIs are called from this UI.
+- **Em dash cleanup**: user-facing strings in `src/`, fixtures, and this doc use colons, commas, or hyphens instead of U+2014.
+- **Automated coverage**: `src/tests/moderationGuidance.test.ts` (bare-domain spam, personal-info, ambiguous civility, partial validation warnings).
+
 ## Local automated verification (this continuation pass)
 
 - `npm run typecheck`: passed
-- `npm test`: passed, `8 files / 33 tests`
+- `npm test`: passed (see git commit output for file/test counts)
 - `npm run build`: passed
 
 ## Bugs found
@@ -159,6 +167,7 @@ All commands in this log were run from `C:\Users\Chimdumebi\DevvitTemp\queuelens
 
 ## Fixes made
 
+- Added moderation caution guidance panels and tests; removed em dashes from user-facing copy in `src/`
 - Clarified post menu description and recursive-analysis toast text (handler guard unchanged; no fake disabled state)
 - Documented that Devvit does not support permanent per-target menu disabling in this repo
 

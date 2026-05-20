@@ -156,7 +156,7 @@ async function loadParentContext(
 
 /**
  * Builds a bounded ContextBundle for a moderation target.
- * Missing or private data surfaces as unavailableContext entries — never invented.
+ * Missing or private data surfaces as unavailableContext entries; never invented.
  */
 export async function gatherRedditContext(session: GatherSession): Promise<ContextBundle> {
   const unavailable: UnavailableContextNote[] = [];

@@ -36,7 +36,8 @@ Current hardening additions:
 - validated deterministic evidence fallback when AI evidence is empty
 - repeated bare-domain spam detection
 - redacted email and phone detection for fake personal-info demos
-- copy moderator note button
+- reasons to be cautious panel
+- suggested moderator note (copyable, advisory only)
 - rule coverage panel
 - visible analysis quality checks
 

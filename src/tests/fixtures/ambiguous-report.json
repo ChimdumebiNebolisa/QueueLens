@@ -5,7 +5,7 @@
     "subredditName": "demo",
     "authorName": "newbie",
     "title": "Is this allowed?",
-    "bodyText": "I posted a question about local restaurants — not sure why it was reported.",
+    "bodyText": "I posted a question about local restaurants, not sure why it was reported.",
     "reportReason": "custom: low effort"
   },
   "parentContext": [],

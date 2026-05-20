@@ -14,7 +14,7 @@ export function SignalList({ signals }: Props) {
   return (
     <section className="panel">
       <h3>Deterministic signals</h3>
-      <p className="muted small">Heuristic flags only — not proof of a violation.</p>
+      <p className="muted small">Heuristic flags only, not proof of a violation.</p>
       <ul className="signal-list">
         {signals.map((s) => (
           <li key={s.id}>

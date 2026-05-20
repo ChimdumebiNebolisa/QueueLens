@@ -1,25 +1,19 @@
-import { useState } from 'react';
 import type { ValidatedAnalysisResult } from '../../shared/queueLensDomain.js';
 import { ConfidenceBadge } from './ConfidenceBadge.js';
 import { EvidencePanel } from './EvidencePanel.js';
+import { ModerationGuidance } from './ModerationGuidance.js';
 
 type Props = { result: ValidatedAnalysisResult };
 
 export function DecisionCard({ result }: Props) {
   const ai = result.aiAnalysis;
-  const [copied, setCopied] = useState(false);
-
-  async function copyModeratorNote(note: string) {
-    await navigator.clipboard.writeText(note);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1500);
-  }
 
   if (!ai) {
     return (
       <section className="card">
         <h2>QueueLens</h2>
         <p className="muted">{result.safeFallbackMessage ?? 'No AI summary available for this run.'}</p>
+        <ModerationGuidance result={result} />
       </section>
     );
   }
@@ -50,17 +44,7 @@ export function DecisionCard({ result }: Props) {
 
       <EvidencePanel items={ai.evidence} fallbackUsed={result.evidenceFallbackUsed} />
 
-      {ai.moderatorNoteDraft && (
-        <div className="draft">
-          <div className="section-head">
-            <span className="label">Moderator note draft</span>
-            <button type="button" className="buttonish secondary" onClick={() => void copyModeratorNote(ai.moderatorNoteDraft!)}>
-              {copied ? 'Copied' : 'Copy moderator note'}
-            </button>
-          </div>
-          <pre>{ai.moderatorNoteDraft}</pre>
-        </div>
-      )}
+      <ModerationGuidance result={result} />
 
       <div className="rules">
         <div className="section-head">
