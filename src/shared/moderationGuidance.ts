@@ -1,4 +1,5 @@
-import type { AIAnalysis, ValidatedAnalysisResult } from './queueLensDomain.js';
+import type { ValidatedAnalysisResult } from './queueLensDomain.js';
+import { deriveDetailedModeratorNote } from './reviewBrief.js';
 
 /** User-facing strings must not contain U+2013 en dashes or U+2014 em dashes. */
 export const EN_DASH = '\u2013';
@@ -93,59 +94,16 @@ export function deriveCautionReasons(result: ValidatedAnalysisResult): string[] 
   return reasons;
 }
 
-function actionGuidance(action: AIAnalysis['suggestedAction']): string {
-  switch (action) {
-    case 'approve':
-      return 'If context supports it, approve after confirming no rule breach.';
-    case 'remove':
-      return 'If evidence and rules align, consider removal and cite the matched rule in your mod note.';
-    case 'escalate':
-      return 'Escalate to senior mods or admins for a second opinion before acting.';
-    case 'needs_manual_review':
-      return 'Review manually; do not rely on QueueLens alone for a quick approve or remove.';
-    default:
-      return 'Review manually before acting on Reddit.';
-  }
-}
-
 /**
  * Plain-English moderator note for display or copy. Never triggers Reddit APIs.
  */
 export function deriveSuggestedModeratorNote(result: ValidatedAnalysisResult): string {
-  const ai = result.aiAnalysis;
-  if (ai?.moderatorNoteDraft?.trim()) {
-    return ai.moderatorNoteDraft.trim();
-  }
-
-  if (!ai) {
-    const base =
-      result.safeFallbackMessage ??
-      'AI summary is unavailable for this run.';
-    return `${base} Review raw context and deterministic signals before acting on Reddit. QueueLens did not change anything on Reddit.`;
-  }
-
-  const rules =
-    ai.possibleRuleMatches.length > 0
-      ? `Possible rules: ${ai.possibleRuleMatches.join(', ')}.`
-      : 'No specific rule match was surfaced.';
-
-  const evidence =
-    ai.evidence.length > 0
-      ? `Validated evidence: ${ai.evidence.map((e) => `"${e.snippet}"`).join('; ')}.`
-      : 'Validated evidence was limited in this run.';
-
-  return [
-    `QueueLens advisory (${ai.confidence} confidence, ${ai.reviewPriority} priority): ${ai.summary}`,
-    actionGuidance(ai.suggestedAction),
-    rules,
-    evidence,
-    'Final decision stays with the moderator; QueueLens did not change anything on Reddit.',
-  ].join(' ');
+  return deriveDetailedModeratorNote(result);
 }
 
 /** Key UI copy used in the review card (guarded against em dashes in tests). */
 export const MODERATION_GUIDANCE_UI_LABELS = {
-  cautionHeading: 'Reasons to be cautious',
+  cautionHeading: 'Before you act',
   moderatorNoteHeading: 'Suggested moderator note',
   copyButton: 'Copy note',
   copiedButton: 'Copied',

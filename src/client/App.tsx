@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { ValidatedAnalysisResult } from '../shared/queueLensDomain.js';
+import { REVIEW_BRIEF_UI } from '../shared/reviewBrief.js';
 import { fetchValidatedAnalysis } from './api.js';
-import { ContextSnapshotPanel } from './components/ContextSnapshotPanel.js';
 import { DecisionCard } from './components/DecisionCard.js';
-import { SignalList } from './components/SignalList.js';
-import { RawContextDrawer } from './components/RawContextDrawer.js';
 import { StatePanel } from './components/StatePanel.js';
 
 export function App() {
@@ -38,8 +36,8 @@ export function App() {
       <>
         <StatePanel phase="error" message={error ?? 'No data.'} />
         <p className="privacy muted small">
-          QueueLens sends bounded public thread text and rules to OpenAI when configured. The API key is server-side only
-          (Devvit secret).
+          QueueLens sends bounded public thread text and rules to OpenAI when configured. The API key stays on the
+          server only.
         </p>
       </>
     );
@@ -48,36 +46,26 @@ export function App() {
   const phase: 'success' | 'partial' | 'error' =
     result.status === 'success' ? 'success' : result.status === 'partial' ? 'partial' : 'error';
 
+  const bannerMessage =
+    phase === 'partial' && result.validationWarnings.length > 0
+      ? REVIEW_BRIEF_UI.partialBanner
+      : phase === 'partial'
+        ? result.safeFallbackMessage
+        : undefined;
+
   return (
     <main className="app">
       <header className="top">
         <h1>QueueLens</h1>
       </header>
 
-      <StatePanel
-        phase={phase}
-        message={
-          result.validationWarnings.length
-            ? result.validationWarnings.join(' ')
-            : result.safeFallbackMessage
-        }
-      />
+      <StatePanel phase={phase} message={bannerMessage} />
 
       <DecisionCard result={result} />
 
-      <ContextSnapshotPanel result={result} />
-
-      <SignalList signals={result.deterministicSignals} />
-
-      <RawContextDrawer result={result} />
-
       <footer className="footer muted small">
-        <p>
-          Final moderation decisions remain with you. QueueLens does not remove, ban, message users, or change Reddit
-          state.
-        </p>
         <p className="privacy">
-          Privacy: only bounded text you see in the raw context drawer is eligible to be sent to OpenAI for this tool.
+          Privacy: only text shown in Technical details raw context may be sent to OpenAI for this review.
         </p>
       </footer>
     </main>

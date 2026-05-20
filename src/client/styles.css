@@ -484,6 +484,148 @@ h1 {
   color: #92400e;
 }
 
+.summary-card {
+  margin-bottom: 4px;
+}
+
+.summary-headline {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+  line-height: 1.35;
+}
+
+.summary-paragraph {
+  margin: 0 0 8px;
+  line-height: 1.45;
+}
+
+.summary-advisory {
+  margin: 8px 0 0;
+}
+
+.summary-pills {
+  margin-bottom: 8px;
+}
+
+.action-pill {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.concern-card-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.concern-card {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+}
+
+.concern-card strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.evidence-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.evidence-group-title {
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+}
+
+.matched-rules-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.matched-rule {
+  margin-bottom: 8px;
+}
+
+.rule-details-summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.rule-description {
+  margin: 6px 0 0;
+  padding-left: 0.5rem;
+}
+
+.other-rules-disclosure {
+  margin-top: 10px;
+}
+
+.note-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.moderator-note-text {
+  white-space: pre-wrap;
+  background: #f8fafc;
+  color: #334155;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-height: 140px;
+  overflow: auto;
+  margin: 6px 0 0;
+  border: 1px solid #e2e8f0;
+}
+
+.before-you-act-list {
+  margin: 8px 0 0;
+  padding-left: 1.1rem;
+}
+
+.before-you-act-list li + li {
+  margin-top: 6px;
+}
+
+.technical-details-outer.disclosure {
+  margin-top: 12px;
+  background: #fff;
+}
+
+.technical-details-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.technical-subsection h4 {
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+}
+
+.technical-warning-list li {
+  margin-bottom: 10px;
+}
+
+.technical-warning-raw {
+  display: block;
+  margin-top: 4px;
+}
+
+.raw-context-embedded {
+  margin-top: 6px;
+}
+
 .caution-toggle {
   margin-top: 6px;
   padding: 0;

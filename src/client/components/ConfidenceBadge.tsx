@@ -1,9 +1,10 @@
-type Props = { level: 'low' | 'medium' | 'high' };
+type Props = { level: 'low' | 'medium' | 'high'; label?: string | undefined };
 
-export function ConfidenceBadge({ level }: Props) {
+export function ConfidenceBadge({ level, label }: Props) {
+  const text = label ?? level;
   return (
     <span className={`confidence confidence-${level}`} title="Model-reported confidence (not a verdict)">
-      Confidence: {level}
+      {text}
     </span>
   );
 }

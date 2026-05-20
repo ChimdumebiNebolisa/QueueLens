@@ -8,8 +8,8 @@ type Props = {
 export function StatePanel({ phase, message }: Props) {
   const labels: Record<Phase, string> = {
     loading: 'Gathering context and running analysis…',
-    success: 'Analysis complete.',
-    partial: 'Partial result: review warnings.',
+    success: 'Ready to review.',
+    partial: 'QueueLens finished with warnings.',
     empty: 'Nothing to show yet.',
     error: 'Something went wrong.',
   };
@@ -17,7 +17,7 @@ export function StatePanel({ phase, message }: Props) {
   return (
     <div className={`state state-${phase}`} role="status">
       <strong>{labels[phase]}</strong>
-      {message && <p className="muted">{message}</p>}
+      {message ? <p className="muted">{message}</p> : null}
     </div>
   );
 }

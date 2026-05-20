@@ -25,7 +25,7 @@ const FIXTURE_NAMES = [
 
 const KEY_USER_FACING_STRINGS = [
   ...Object.values(MODERATION_GUIDANCE_UI_LABELS),
-  'Partial result: review warnings.',
+  'QueueLens finished with warnings.',
   'Heuristic flags only, not proof of a violation.',
   'Advisory text only. Copying or reading this note does not change Reddit.',
   'Review assistance only. Final decision stays with the moderator.',
@@ -33,8 +33,9 @@ const KEY_USER_FACING_STRINGS = [
   'Evidence (exact snippets)',
   'Gathering context and running analysis…',
   'Final moderation decisions remain with you. QueueLens does not remove, ban, message users, or change Reddit state.',
-  'Review details',
-  'What QueueLens checked before producing this brief.',
+  'Before you act',
+  'Technical details',
+  'Why QueueLens flagged this',
   'Show more',
   'Show less',
 ];
@@ -147,9 +148,8 @@ describe('moderationGuidance', () => {
     const result = partialAmbiguousResult();
     const note = deriveSuggestedModeratorNote(result);
 
-    expect(note).toContain('QueueLens advisory');
-    expect(note).toContain('manual');
-    expect(note).toContain('did not change anything on Reddit');
+    expect(note.toLowerCase()).toContain('closer look');
+    expect(note).toContain('Rules that may apply');
     expect(containsEmDash(note)).toBe(false);
   });
 
@@ -165,7 +165,7 @@ describe('moderationGuidance', () => {
   it('does not import Reddit or server action modules', async () => {
     const guidanceSource = readFileSync(join(here, '..', 'shared', 'moderationGuidance.ts'), 'utf8');
     const componentSource = readFileSync(
-      join(here, '..', 'client', 'components', 'ModerationGuidance.tsx'),
+      join(here, '..', 'client', 'components', 'ModeratorNotePanel.tsx'),
       'utf8',
     );
 
@@ -229,15 +229,13 @@ describe('moderationGuidance', () => {
 
   it('scans client review UI sources for typographic dashes in string literals', () => {
     const clientComponents = [
-      join(here, '..', 'client', 'components', 'ModerationGuidance.tsx'),
       join(here, '..', 'client', 'components', 'StatePanel.tsx'),
       join(here, '..', 'client', 'components', 'DecisionCard.tsx'),
-      join(here, '..', 'client', 'components', 'EvidencePanel.tsx'),
-      join(here, '..', 'client', 'components', 'CollapsibleSection.tsx'),
-      join(here, '..', 'client', 'components', 'InvestigationTracePanel.tsx'),
-      join(here, '..', 'client', 'components', 'ContextSnapshotPanel.tsx'),
-      join(here, '..', 'client', 'components', 'SignalList.tsx'),
+      join(here, '..', 'client', 'components', 'SummaryCard.tsx'),
+      join(here, '..', 'client', 'components', 'GroupedEvidencePanel.tsx'),
+      join(here, '..', 'client', 'components', 'TechnicalDetailsPanel.tsx'),
       join(here, '..', 'shared', 'moderationGuidance.ts'),
+      join(here, '..', 'shared', 'reviewBrief.ts'),
     ];
 
     const literalPattern = /(['"`])(?:(?!\1).)*[\u2013\u2014](?:(?!\1).)*\1/g;

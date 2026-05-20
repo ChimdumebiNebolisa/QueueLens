@@ -11,49 +11,56 @@ function readComponent(name: string): string {
 }
 
 describe('reviewDeskUI', () => {
-  it('groups rules and analysis quality under Review details', () => {
+  it('uses moderator brief sections in DecisionCard', () => {
     const source = readComponent('DecisionCard.tsx');
-    expect(source).toContain('Review details');
-    expect(source).toMatch(/CollapsibleSection title="Review details"/);
-    expect(source).toContain('Rules considered');
-    expect(source).toContain('Analysis quality');
+    expect(source).toContain('SummaryCard');
+    expect(source).toContain('FlaggedConcernsPanel');
+    expect(source).toContain('GroupedEvidencePanel');
+    expect(source).toContain('RulesPanel');
+    expect(source).toContain('ModeratorNotePanel');
+    expect(source).toContain('BeforeYouActPanel');
+    expect(source).toContain('TechnicalDetailsPanel');
+    expect(source).not.toContain('Review brief');
+    expect(source).not.toContain('Investigation trace');
   });
 
-  it('collapses investigation trace by default with subtitle', () => {
-    const decisionCard = readComponent('DecisionCard.tsx');
-    expect(decisionCard).toContain('What QueueLens checked before producing this brief.');
-    expect(decisionCard).toMatch(/CollapsibleSection title="Investigation trace" subtitle=/);
-    expect(decisionCard).not.toMatch(/title="Investigation trace"[^>]*defaultOpen=\{true\}/);
-
-    const collapsible = readComponent('CollapsibleSection.tsx');
-    expect(collapsible).toContain('<details');
-    expect(collapsible).toMatch(/defaultOpen = false/);
+  it('collapses technical details by default', () => {
+    const source = readComponent('TechnicalDetailsPanel.tsx');
+    expect(source).toContain('technicalDetailsHeading');
+    expect(source).toMatch(/CollapsibleSection title=\{REVIEW_BRIEF_UI\.technicalDetailsHeading\}/);
+    expect(source).toContain('RawContextDrawer');
+    expect(source).toContain('InvestigationTracePanel');
   });
 
-  it('collapses context snapshot by default and removes duplicate header metadata', () => {
-    const source = readComponent('ContextSnapshotPanel.tsx');
-    expect(source).toContain('CollapsibleSection');
-    expect(source).not.toContain('context-snapshot-meta');
-    expect(source).not.toContain('Open target on Reddit');
+  it('groups evidence by concern', () => {
+    const source = readComponent('GroupedEvidencePanel.tsx');
+    expect(source).toContain('groupEvidenceByConcern');
+    expect(source).toContain('evidence-group');
   });
 
-  it('collapses deterministic signals by default', () => {
-    const source = readComponent('SignalList.tsx');
-    expect(source).toContain('CollapsibleSection');
-    expect(source).toContain('Deterministic signals');
+  it('shows matched rules first with other rules collapsed', () => {
+    const source = readComponent('RulesPanel.tsx');
+    expect(source).toContain('getMatchedRules');
+    expect(source).toContain('otherRulesHeading');
   });
 
-  it('caps caution reasons at three by default with show more toggle', () => {
-    const source = readComponent('ModerationGuidance.tsx');
-    expect(source).toContain('CAUTION_VISIBLE_DEFAULT = 3');
-    expect(source).toContain('Show more');
-    expect(source).toContain('Show less');
-    expect(source).toMatch(/slice\(0,\s*CAUTION_VISIBLE_DEFAULT\)/);
+  it('provides short and detailed moderator notes', () => {
+    const source = readComponent('ModeratorNotePanel.tsx');
+    expect(source).toContain('deriveShortModeratorNote');
+    expect(source).toContain('deriveDetailedModeratorNote');
+    expect(source).toContain('detailedNoteToggle');
   });
 
-  it('uses subsection styling for evidence instead of nested panel cards', () => {
-    const source = readComponent('EvidencePanel.tsx');
-    expect(source).toContain('subsection evidence-panel');
-    expect(source).not.toMatch(/className="panel evidence-panel"/);
+  it('uses before you act instead of reasons to be cautious in the panel', () => {
+    const source = readComponent('BeforeYouActPanel.tsx');
+    expect(source).toContain('deriveBeforeYouActNotes');
+    expect(source).toContain('beforeYouActHeading');
+  });
+
+  it('keeps App shell focused on DecisionCard without separate signal panels', () => {
+    const app = readFileSync(join(here, '..', 'client', 'App.tsx'), 'utf8');
+    expect(app).not.toContain('ContextSnapshotPanel');
+    expect(app).not.toContain('SignalList');
+    expect(app).not.toContain('RawContextDrawer');
   });
 });
